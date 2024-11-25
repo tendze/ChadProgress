@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"ChadProgress/internal/config"
+	"fmt"
+)
 
 func main() {
-	fmt.Println("hi")
+	cfg := config.MustLoad()
+	fmt.Println(cfg)
 }

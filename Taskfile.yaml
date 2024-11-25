@@ -1,0 +1,8 @@
+version: 3
+
+tasks:
+  ChadProgress:
+    desc: "starts ChadProgress server"
+    aliases:
+      - cp
+    cmd: go run cmd/cp/main.go --config_path=./config/local.yaml

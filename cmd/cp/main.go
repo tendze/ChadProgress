@@ -19,6 +19,7 @@ func main() {
 	fmt.Println(cfg)
 	log := setupLogger(cfg.Env)
 	log.Info("server starting...")
+
 }
 
 func setupLogger(env string) *slog.Logger {

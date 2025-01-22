@@ -16,10 +16,15 @@ const (
 
 func main() {
 	cfg := config.MustLoad()
-	fmt.Println(cfg)
 	log := setupLogger(cfg.Env)
-	log.Info("server starting...")
-
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.DB.Username,
+		cfg.DB.DBPassword,
+		cfg.DB.Host, cfg.DB.Port,
+		cfg.DB.DBName,
+		cfg.DB.SSLMode,
+	)
 }
 
 func setupLogger(env string) *slog.Logger {

@@ -3,6 +3,7 @@ package main
 import (
 	"ChadProgress/internal/config"
 	"ChadProgress/internal/lib/logger/handlers/slogpretty"
+	"ChadProgress/storage/postgres"
 	"fmt"
 	"log/slog"
 	"os"
@@ -25,6 +26,12 @@ func main() {
 		cfg.DB.DBName,
 		cfg.DB.SSLMode,
 	)
+
+	storage, err := postgres.New(dsn)
+	if err != nil {
+		log.Error("failed to init storage:", err)
+	}
+	_ = storage
 }
 
 func setupLogger(env string) *slog.Logger {

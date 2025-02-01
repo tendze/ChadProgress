@@ -62,7 +62,8 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err = validator.New().Struct(req); err != nil {
 		log.Error("invalid request")
 		w.WriteHeader(http.StatusBadRequest)
-		render.JSON(w, r, response.Error("invalid request"))
+		validationErr := err.(validator.ValidationErrors)
+		render.JSON(w, r, response.ValidationError(validationErr))
 		return
 	}
 

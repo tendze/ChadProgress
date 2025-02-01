@@ -14,7 +14,7 @@ type Request struct {
 	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
 	Name     string `json:"name" validate:"required"`
-	Role     string `json:"role" validate:"required"`
+	Role     string `json:"role" validate:"required,oneof=trainer client"`
 }
 
 type Response struct {
@@ -60,9 +60,9 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info("request body decoded", slog.Any("request", req))
 	if err = validator.New().Struct(req); err != nil {
-		log.Error("invalid request")
 		w.WriteHeader(http.StatusBadRequest)
 		validationErr := err.(validator.ValidationErrors)
+		log.Error("invalid request", validationErr.Error())
 		render.JSON(w, r, response.ValidationError(validationErr))
 		return
 	}
@@ -71,7 +71,14 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	err = u.userService.RegisterUser(req.Email, req.Password, req.Name, req.Role)
 
 	if err != nil {
-		log.Error("failed to save user", err.Error())
+		if err == userservice.ErrUserAlreadyExists {
+			log.Info("user already exists")
+			w.WriteHeader(http.StatusBadGateway)
+			render.JSON(w, r, response.Error("user already with such email"))
+			return
+		}
+
+		log.Error("failed to save user", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusBadGateway)
 		render.JSON(w, r, response.Error("failed to save user"))
 		return

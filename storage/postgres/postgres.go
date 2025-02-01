@@ -2,10 +2,14 @@ package postgres
 
 import (
 	"ChadProgress/internal/models"
+	"ChadProgress/storage"
+	"errors"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
+	"strings"
 )
 
 type Storage struct {
@@ -14,7 +18,9 @@ type Storage struct {
 
 func New(dsn string) (*Storage, error) {
 	const op = "postgres.New"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent), // Отключаем логирование
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -63,10 +69,12 @@ func autoMigrate(db *gorm.DB) error {
 }
 
 func (s *Storage) SaveUser(user *models.User) (int64, error) {
-	//TODO: обработка ошибки, когда некорректный role
 	result := s.DB.Create(user)
-	if result.Error != nil {
-		log.Fatalf("ошибка при добавлении юзера")
+	if err := result.Error; err != nil {
+		if isInvalidEnum(err) {
+			return -1, storage.ErrUserAlreadyExists
+		}
+		return -1, result.Error
 	}
 	return int64(user.ID), nil
 }
@@ -87,4 +95,18 @@ func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
 	return nil
 }
 
-func (s *Storage) GetUser(email string) (*models.Client, error) { return nil, nil }
+func (s *Storage) GetUser(email string) (*models.User, error) {
+	var user models.User
+	result := s.DB.First(&user, "email = ?", email)
+	if err := result.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, storage.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func isInvalidEnum(err error) bool {
+	return strings.Contains(err.Error(), "SQLSTATE 23505")
+}

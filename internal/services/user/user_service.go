@@ -8,6 +8,10 @@ import (
 	"log/slog"
 )
 
+var (
+	ErrUserAlreadyExists = fmt.Errorf("user already exists")
+)
+
 type UserService struct {
 	storage storage.Storage
 	log     *slog.Logger
@@ -27,8 +31,12 @@ func (u *UserService) RegisterUser(email, password, name, role string) error {
 	)
 
 	_, err := u.storage.GetUser(email)
-	if err != nil {
-		log.Error("user exists")
+	if err == nil {
+		if err == storage.ErrUserAlreadyExists {
+			log.Info("user already exists")
+		} else {
+			log.Error("get user failed", slog.String("errorType", err.Error()))
+		}
 		return errors.New("user already exists")
 	}
 
@@ -40,8 +48,12 @@ func (u *UserService) RegisterUser(email, password, name, role string) error {
 	}
 	userID, err := u.storage.SaveUser(newUser)
 	if err != nil {
-		log.Error("could not save user")
-		return errors.New("could not save user")
+		if err == storage.ErrUserAlreadyExists {
+			log.Info("user already exists")
+			return ErrUserAlreadyExists
+		}
+		log.Error("save user failed", slog.String("errorType", err.Error()))
+		return err
 	}
 
 	if role == "client" {

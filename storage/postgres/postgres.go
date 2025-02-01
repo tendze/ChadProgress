@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
 )
 
-var ()
+type Storage struct {
+	DB *gorm.DB
+}
 
-func New(dsn string) (*gorm.DB, error) {
+func New(dsn string) (*Storage, error) {
 	const op = "postgres.New"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -25,7 +28,7 @@ func New(dsn string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return db, nil
+	return &Storage{DB: db}, nil
 }
 
 func createEnum(db *gorm.DB) error {
@@ -58,3 +61,30 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Metric{},
 	)
 }
+
+func (s *Storage) SaveUser(user *models.User) (int64, error) {
+	//TODO: обработка ошибки, когда некорректный role
+	result := s.DB.Create(user)
+	if result.Error != nil {
+		log.Fatalf("ошибка при добавлении юзера")
+	}
+	return int64(user.ID), nil
+}
+
+func (s *Storage) SaveClient(client *models.Client) error {
+	result := s.DB.Create(client)
+	if result.Error != nil {
+		log.Fatalf("failed to save trainer")
+	}
+	return nil
+}
+
+func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
+	result := s.DB.Create(trainer)
+	if result.Error != nil {
+		log.Fatalf("failed to save trainer")
+	}
+	return nil
+}
+
+func (s *Storage) GetUser(email string) (*models.Client, error) { return nil, nil }

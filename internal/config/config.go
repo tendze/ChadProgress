@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Env        string     `yaml:"env" env-default:"local"`
-	HTTPServer HTTPServer `yaml:"http_server"`
-	DB         DataBase   `yaml:"db"`
+	Env        string            `yaml:"env" env-default:"local"`
+	HTTPServer HTTPServer        `yaml:"http_server"`
+	DB         DataBase          `yaml:"db"`
+	AuthClient AuthServiceClient `yaml:"auth_client"`
 }
 
 type HTTPServer struct {
@@ -29,6 +30,10 @@ type DataBase struct {
 	DBName     string `yaml:"dbname" env-default:"my-db"`
 	DBPassword string
 	SSLMode    string `yaml:"sslmode" env-default:"disable"`
+}
+
+type AuthServiceClient struct {
+	BaseURL string `yaml:"baseurl"`
 }
 
 func MustLoad() *Config {

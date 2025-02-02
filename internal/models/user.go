@@ -5,7 +5,6 @@ import "time"
 type User struct {
 	ID           uint      `gorm:"primaryKey"`
 	Email        string    `gorm:"unique;not null"`
-	PasswordHash string    `gorm:"not null"`
 	Name         string    `gorm:"not null"`
 	Role         string    `gorm:"type:role_enum;not null"`
 	RegisteredAt time.Time `gorm:"autoCreateTime"`

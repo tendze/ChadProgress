@@ -4,23 +4,25 @@ import (
 	"ChadProgress/internal/lib/api/response"
 	"ChadProgress/internal/models"
 	userservice "ChadProgress/internal/services/user"
+	"errors"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 )
 
-type Request struct {
+type RegisterRequest struct {
 	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
 	Name     string `json:"name" validate:"required"`
 	Role     string `json:"role" validate:"required,oneof=trainer client"`
 }
 
-type Response struct {
-	Status  string      `json:"status"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+type RegisterResponse struct {
+	Status   string      `json:"status"`
+	JWTToken string      `json:"token"`
+	Message  string      `json:"message,omitempty"`
+	Data     interface{} `json:"data,omitempty"`
 }
 
 type UserProvider interface {
@@ -34,6 +36,7 @@ type UserHandler struct {
 }
 
 func NewUserHandler(
+	// TODO: INTERFACE INSTEAD OF STRUCT
 	service *userservice.UserService,
 	log *slog.Logger,
 ) *UserHandler {
@@ -51,13 +54,14 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req Request
+	var req RegisterRequest
 	err := render.DecodeJSON(r.Body, &req)
 	if err != nil {
 		log.Error("failed to decode request body", err.Error())
 		render.JSON(w, r, response.Error("failed to decode request body"))
 		return
 	}
+
 	log.Info("request body decoded", slog.Any("request", req))
 	if err = validator.New().Struct(req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -67,11 +71,10 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: pass a hashed password!!!
-	err = u.userService.RegisterUser(req.Email, req.Password, req.Name, req.Role)
+	jwtToken, err := u.userService.RegisterUser(req.Email, req.Password, req.Name, req.Role)
 
 	if err != nil {
-		if err == userservice.ErrUserAlreadyExists {
+		if errors.Is(err, userservice.ErrUserAlreadyExists) {
 			log.Info("user already exists")
 			w.WriteHeader(http.StatusBadGateway)
 			render.JSON(w, r, response.Error("user already with such email"))
@@ -83,6 +86,14 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, response.Error("failed to save user"))
 		return
 	}
+
 	log.Info("successfully saved user", slog.String("email", req.Email))
-	render.JSON(w, r, response.OK())
+	render.JSON(w, r, regResponseOK(jwtToken))
+}
+
+func regResponseOK(token string) RegisterResponse {
+	return RegisterResponse{
+		Status:   "OK",
+		JWTToken: token,
+	}
 }

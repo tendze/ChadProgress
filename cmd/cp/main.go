@@ -1,8 +1,9 @@
 package main
 
 import (
+	auth_client "ChadProgress/internal/auth_client/http"
 	"ChadProgress/internal/config"
-	"ChadProgress/internal/http-server/handlers/url/user/reg"
+	"ChadProgress/internal/http_server/handlers/url/user/reg"
 	"ChadProgress/internal/lib/logger/handlers/slogpretty"
 	userservice "ChadProgress/internal/services/user"
 	"ChadProgress/storage/postgres"
@@ -11,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -36,7 +38,13 @@ func main() {
 		log.Error("failed to init storage:", err)
 	}
 
-	userService := userservice.NewUserService(storage, log)
+	authServiceClient := auth_client.NewAuthClient(
+		cfg.AuthClient.BaseURL,
+		log,
+		time.Second*10,
+	)
+
+	userService := userservice.NewUserService(storage, authServiceClient, log)
 	userHandler := reg.NewUserHandler(userService, log)
 
 	router := chi.NewRouter()

@@ -10,3 +10,5 @@ db:
   port: "5432"
   dbname: "ChadDB"
   sslmode: "disable"
+auth_client:
+  baseurl: "http://127.0.0.1:8001"

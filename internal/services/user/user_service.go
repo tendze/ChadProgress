@@ -1,9 +1,10 @@
 package userservice
 
 import (
+	"ChadProgress/internal/auth_client"
 	"ChadProgress/internal/models"
 	"ChadProgress/storage"
-	"errors"
+	"context"
 	"fmt"
 	"log/slog"
 )
@@ -12,48 +13,66 @@ var (
 	ErrUserAlreadyExists = fmt.Errorf("user already exists")
 )
 
+type AuthServiceClient interface {
+	RegisterUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserRegistrationResponse, error)
+}
+
 type UserService struct {
-	storage storage.Storage
-	log     *slog.Logger
+	storage    storage.Storage
+	authClient AuthServiceClient
+	log        *slog.Logger
 }
 
 func NewUserService(
 	storage storage.Storage,
+	authServiceClient AuthServiceClient,
 	log *slog.Logger,
 ) *UserService {
-	return &UserService{storage: storage, log: log}
+	return &UserService{
+		storage:    storage,
+		authClient: authServiceClient,
+		log:        log,
+	}
 }
 
-func (u *UserService) RegisterUser(email, password, name, role string) error {
+// RegisterUser This function returns token from side authorization service and error
+func (u *UserService) RegisterUser(email, password, name, role string) (string, error) {
 	const op = "services.user.user_service.RegisterUser"
 	log := u.log.With(
 		slog.String("op", op),
 	)
 
-	_, err := u.storage.GetUser(email)
-	if err == nil {
-		if err == storage.ErrUserAlreadyExists {
-			log.Info("user already exists")
-		} else {
-			log.Error("get user failed", slog.String("errorType", err.Error()))
-		}
-		return errors.New("user already exists")
+	user, _ := u.storage.GetUser(email)
+	if user != nil {
+		log.Info("user already exists")
+		return "", fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
 	}
 
 	newUser := &models.User{
-		Email:        email,
-		PasswordHash: password,
-		Name:         name,
-		Role:         role,
+		Email: email,
+		Name:  name,
+		Role:  role,
 	}
+
+	regReq := models.UserAuth{
+		Login:    email,
+		Password: password,
+	}
+
+	resp, err := u.authClient.RegisterUser(context.Background(), regReq)
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
 	userID, err := u.storage.SaveUser(newUser)
 	if err != nil {
 		if err == storage.ErrUserAlreadyExists {
 			log.Info("user already exists")
-			return ErrUserAlreadyExists
+			return "", ErrUserAlreadyExists
 		}
 		log.Error("save user failed", slog.String("errorType", err.Error()))
-		return err
+		return "", err
 	}
 
 	if role == "client" {
@@ -77,8 +96,9 @@ func (u *UserService) RegisterUser(email, password, name, role string) error {
 
 	if err != nil {
 		log.Error(fmt.Sprintf("could not save new %s", role))
-		return err
+		return "", err
 	}
 
-	return nil
+	jwtToken := resp.Token
+	return jwtToken, nil
 }

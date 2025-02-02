@@ -8,7 +8,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
 	"strings"
 )
 
@@ -69,40 +68,44 @@ func autoMigrate(db *gorm.DB) error {
 }
 
 func (s *Storage) SaveUser(user *models.User) (int64, error) {
+	const op = "postgres.SaveUser"
 	result := s.DB.Create(user)
 	if err := result.Error; err != nil {
 		if isInvalidEnum(err) {
-			return -1, storage.ErrUserAlreadyExists
+			return -1, fmt.Errorf("%s: %w", op, storage.ErrUserAlreadyExists)
 		}
-		return -1, result.Error
+		return -1, fmt.Errorf("%s: %w", op, result.Error)
 	}
 	return int64(user.ID), nil
 }
 
 func (s *Storage) SaveClient(client *models.Client) error {
+	const op = "postgres.SaveClient"
 	result := s.DB.Create(client)
 	if result.Error != nil {
-		log.Fatalf("failed to save trainer")
+		return fmt.Errorf("%s: %w", op, result.Error)
 	}
 	return nil
 }
 
 func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
+	const op = "postgres.SaveTrainer"
 	result := s.DB.Create(trainer)
 	if result.Error != nil {
-		log.Fatalf("failed to save trainer")
+		return fmt.Errorf("%s: %w", op, result.Error)
 	}
 	return nil
 }
 
 func (s *Storage) GetUser(email string) (*models.User, error) {
+	const op = "postgres.GetUser"
 	var user models.User
 	result := s.DB.First(&user, "email = ?", email)
 	if err := result.Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, storage.ErrUserNotFound
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return &user, nil
 }

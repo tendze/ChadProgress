@@ -5,12 +5,14 @@ import (
 	"ChadProgress/internal/models"
 	"ChadProgress/storage"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 )
 
 var (
 	ErrUserAlreadyExists = fmt.Errorf("user already exists")
+	ErrFieldIsTooLong    = fmt.Errorf("field is too long")
 )
 
 type AuthServiceClient interface {
@@ -42,8 +44,8 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 		slog.String("op", op),
 	)
 
-	user, _ := u.storage.GetUser(email)
-	if user != nil {
+	_, err := u.storage.GetUser(email)
+	if err == nil {
 		log.Info("user already exists")
 		return "", fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
 	}
@@ -67,9 +69,9 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 
 	userID, err := u.storage.SaveUser(newUser)
 	if err != nil {
-		if err == storage.ErrUserAlreadyExists {
-			log.Info("user already exists")
-			return "", ErrUserAlreadyExists
+		if errors.Is(err, storage.ErrFieldIsTooLong) {
+			log.Info("field is too long")
+			return "", fmt.Errorf("%s: %w", op, ErrFieldIsTooLong)
 		}
 		log.Error("save user failed", slog.String("errorType", err.Error()))
 		return "", err

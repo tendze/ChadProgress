@@ -79,6 +79,11 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadGateway)
 			render.JSON(w, r, response.Error("user already with such email"))
 			return
+		} else if errors.Is(err, userservice.ErrFieldIsTooLong) {
+			log.Info("field login or password is too long")
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, response.Error("login and password must be no more than 100 symbols"))
+			return
 		}
 
 		log.Error("failed to save user", slog.String("error", err.Error()))
@@ -89,6 +94,10 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("successfully saved user", slog.String("email", req.Email))
 	render.JSON(w, r, regResponseOK(jwtToken))
+}
+
+func (u *UserHandler) Login(w http.ResponseWriter, r *http.Response) {
+
 }
 
 func regResponseOK(token string) RegisterResponse {

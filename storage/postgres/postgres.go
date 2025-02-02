@@ -71,8 +71,10 @@ func (s *Storage) SaveUser(user *models.User) (int64, error) {
 	const op = "postgres.SaveUser"
 	result := s.DB.Create(user)
 	if err := result.Error; err != nil {
-		if isInvalidEnum(err) {
+		if isInvalidEnumError(err) {
 			return -1, fmt.Errorf("%s: %w", op, storage.ErrUserAlreadyExists)
+		} else if isTooLongFieldError(err) {
+			return -1, fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
 		return -1, fmt.Errorf("%s: %w", op, result.Error)
 	}
@@ -110,6 +112,10 @@ func (s *Storage) GetUser(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func isInvalidEnum(err error) bool {
+func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 23505")
+}
+
+func isTooLongFieldError(err error) bool {
+	return strings.Contains(err.Error(), "SQLSTATE 22001")
 }

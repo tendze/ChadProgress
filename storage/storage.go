@@ -8,6 +8,7 @@ import (
 var (
 	ErrUserAlreadyExists = fmt.Errorf("user already exists")
 	ErrUserNotFound      = fmt.Errorf("user not found")
+	ErrFieldIsTooLong    = fmt.Errorf("field is too long")
 )
 
 type Storage interface {

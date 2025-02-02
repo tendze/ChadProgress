@@ -4,8 +4,8 @@ import "time"
 
 type User struct {
 	ID           uint      `gorm:"primaryKey"`
-	Email        string    `gorm:"unique;not null"`
-	Name         string    `gorm:"not null"`
+	Email        string    `gorm:"type:varchar(100);unique;not null"`
+	Name         string    `gorm:"type:varchar(100);not null"`
 	Role         string    `gorm:"type:role_enum;not null"`
 	RegisteredAt time.Time `gorm:"autoCreateTime"`
 	Trainer      Trainer   `gorm:"foreignKey:UserID"`

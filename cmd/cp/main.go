@@ -50,6 +50,7 @@ func main() {
 	router := chi.NewRouter()
 
 	router.Post("/register", userHandler.Register)
+	router.Get("/login", userHandler.Login)
 
 	serverAddr := cfg.HTTPServer.Host + ":" + cfg.HTTPServer.Port
 	server := &http.Server{

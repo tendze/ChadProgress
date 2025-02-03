@@ -53,7 +53,7 @@ func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_clien
 	)
 	if err != nil {
 		log.Error("error occurred: " + err.Error())
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
@@ -77,4 +77,53 @@ func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_clien
 		return nil, errors.New("failed to parse response from auth service")
 	}
 	return &regResp, nil
+}
+
+func (c *AuthServiceClient) LoginUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserLoginResponse, error) {
+	const op = "auth_client.http.auth_client.RegisterUser"
+	log := c.log.With(
+		slog.String("op", op),
+	)
+	loginReq := auth_client.UserRegistrationRequest{
+		Login:    authReq.GetLogin(),
+		Password: authReq.GetPassword(),
+	}
+
+	jsonPayload, err := json.Marshal(loginReq)
+	if err != nil {
+		log.Error(
+			"error occurred: " + err.Error(),
+		)
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		c.baseUrl+"/auth",
+		bytes.NewBuffer(jsonPayload),
+	)
+	if err != nil {
+		log.Error("error occurred: " + err.Error())
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		log.Error("error occurred: " + err.Error())
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer resp.Body.Close()
+
+	var loginResp auth_client.UserLoginResponse
+	err = json.NewDecoder(resp.Body).Decode(&loginResp)
+	if err != nil {
+		log.Error("error occurred: " + err.Error())
+		return nil, fmt.Errorf("%s: %w", op, errors.New("failed to parse response from auth service"))
+	}
+	if loginResp.Error != "" {
+		log.Error("auth client did not find user")
+		return nil, fmt.Errorf("%s: %w", op, errors.New(loginResp.Error))
+	}
+	return &loginResp, nil
 }

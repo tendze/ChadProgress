@@ -1,5 +1,12 @@
 package auth_client
 
+import "errors"
+
+var (
+	ErrClientUnavailable = errors.New("auth client is not available")
+	ErrUserNotFound      = errors.New("user not found")
+)
+
 // UserAuthRequestInterface interface summarizes requests for authorization
 type UserAuthRequestInterface interface {
 	GetLogin() string
@@ -28,4 +35,5 @@ type UserLoginRequest struct {
 // UserLoginResponse particular structure for login responses to auth services
 type UserLoginResponse struct {
 	Token string `json:"token"`
+	Error string `json:"error"`
 }

@@ -13,6 +13,7 @@ import (
 
 type AuthServiceClient interface {
 	RegisterUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserRegistrationResponse, error)
+	LoginUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserLoginResponse, error)
 }
 
 type UserService struct {
@@ -101,6 +102,22 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 	return jwtToken, nil
 }
 
-func (u *UserService) Login(login, password string) (string, error) {
-	return "", nil
+func (u *UserService) Login(email, password string) (string, error) {
+	const op = "services.user.user_service.Login"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	regReq := models.UserAuth{
+		Login:    email,
+		Password: password,
+	}
+
+	loginResp, err := u.authClient.LoginUser(context.Background(), regReq)
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+	log.Info("user successfully signed in")
+	return loginResp.Token, nil
 }

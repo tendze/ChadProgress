@@ -127,3 +127,38 @@ func (c *AuthServiceClient) LoginUser(ctx context.Context, authReq auth_client.U
 	}
 	return &loginResp, nil
 }
+
+// ValidateToken validates provided token and returns user login from auth service and error
+func (c *AuthServiceClient) ValidateToken(ctx context.Context, token string) (string, error) {
+	const op = "auth_client.http.auth_client.ValidateToken"
+	log := c.log.With(
+		slog.String("op", op),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseUrl+"/validate", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("token validation failed")
+	}
+
+	var validateResp auth_client.UserValidateTokenResponse
+	err = json.NewDecoder(resp.Body).Decode(&validateResp)
+	if err != nil {
+		return "", errors.New("failed to parse response from auth service")
+	}
+
+	if validateResp.Status != "OK" {
+		return "", errors.New(validateResp.Error)
+	}
+	log.Info("token successfully validated")
+	return validateResp.UserLogin, nil
+}

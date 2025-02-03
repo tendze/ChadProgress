@@ -37,3 +37,9 @@ type UserLoginResponse struct {
 	Token string `json:"token"`
 	Error string `json:"error"`
 }
+
+type UserValidateTokenResponse struct {
+	Status    string `json:"status"`
+	UserLogin string `json:"user-login"`
+	Error     string `json:"error"`
+}

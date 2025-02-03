@@ -143,7 +143,7 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Error("failed to sign in")
-		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error(err.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to sign in"))
 		return
 	}
 

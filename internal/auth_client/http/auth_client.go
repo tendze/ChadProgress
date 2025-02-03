@@ -140,6 +140,7 @@ func (c *AuthServiceClient) ValidateToken(ctx context.Context, token string) (st
 		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return "", err

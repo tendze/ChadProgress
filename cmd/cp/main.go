@@ -5,6 +5,7 @@ import (
 	"ChadProgress/internal/config"
 	"ChadProgress/internal/http_server/handlers/url/user/reg"
 	"ChadProgress/internal/lib/logger/handlers/slogpretty"
+	http2 "ChadProgress/internal/middleware/auth"
 	userservice "ChadProgress/internal/services/user"
 	"ChadProgress/storage/postgres"
 	"fmt"
@@ -38,19 +39,11 @@ func main() {
 		log.Error("failed to init storage:", err)
 	}
 
-	authServiceClient := auth_client.NewAuthClient(
-		cfg.AuthClient.BaseURL,
-		log,
-		time.Second*10,
-	)
-
+	authServiceClient := auth_client.NewAuthClient(cfg.AuthClient.BaseURL, log, time.Second*10)
 	userService := userservice.NewUserService(storage, authServiceClient, log)
 	userHandler := reg.NewUserHandler(userService, log)
 
 	router := chi.NewRouter()
-
-	router.Post("/register", userHandler.Register)
-	router.Get("/login", userHandler.Login)
 
 	serverAddr := cfg.HTTPServer.Host + ":" + cfg.HTTPServer.Port
 	server := &http.Server{
@@ -60,6 +53,20 @@ func main() {
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
+
+	authMiddleware := http2.AuthMiddleware(authServiceClient)
+
+	// Open endpoints
+	router.Route("/user", func(r chi.Router) {
+		router.Post("/register", userHandler.Register)
+		router.Post("/login", userHandler.Login)
+	})
+
+	// Protected endpoints
+	router.Route("/app", func(r chi.Router) {
+		r.Use(authMiddleware)
+	})
+
 	log.Info("server started", slog.String("servaddr", serverAddr))
 	if err = server.ListenAndServe(); err != nil {
 		log.Error("failed to start server")

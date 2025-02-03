@@ -4,9 +4,11 @@ import (
 	authclient "ChadProgress/internal/auth_client/http"
 	"ChadProgress/internal/config"
 	"ChadProgress/internal/http_server/handlers/url/authorization"
+	userhandler "ChadProgress/internal/http_server/handlers/url/user"
 	"ChadProgress/internal/lib/logger/handlers/slogpretty"
 	http2 "ChadProgress/internal/middleware/auth"
-	userauthservice "ChadProgress/internal/services/auth"
+	userauthservice "ChadProgress/internal/services/authorization"
+	userservice "ChadProgress/internal/services/user"
 	"ChadProgress/storage/postgres"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -40,8 +42,11 @@ func main() {
 	}
 
 	authServiceClient := authclient.NewAuthClient(cfg.AuthClient.BaseURL, log, time.Second*10)
-	userAuthService := userauthservice.NewUserService(storage, authServiceClient, log)
-	userHandler := authorization.NewUserAuthHandler(userAuthService, log)
+	userAuthService := userauthservice.NewUserAuthService(storage, authServiceClient, log)
+	userAuthHandler := authorization.NewUserAuthHandler(userAuthService, log)
+
+	userService := userservice.NewUserService(storage, log)
+	userHandler := userhandler.NewUserHandler(log, userService)
 
 	router := chi.NewRouter()
 
@@ -58,13 +63,14 @@ func main() {
 
 	// Open endpoints
 	router.Route("/authorization", func(r chi.Router) {
-		router.Post("/register", userHandler.Register)
-		router.Post("/login", userHandler.Login)
+		r.Post("/register", userAuthHandler.Register)
+		r.Post("/login", userAuthHandler.Login)
 	})
 
 	// Protected endpoints
 	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
+		r.Post("/trainers/profile", userHandler.CreateTrainer)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))

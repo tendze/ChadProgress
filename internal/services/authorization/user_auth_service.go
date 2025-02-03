@@ -17,12 +17,13 @@ type AuthServiceClient interface {
 }
 
 type UserAuthService struct {
+	// TODO: MAKE OWN STORAGE INTERFACE
 	storage    storage.Storage
 	authClient AuthServiceClient
 	log        *slog.Logger
 }
 
-func NewUserService(
+func NewUserAuthService(
 	storage storage.Storage,
 	authServiceClient AuthServiceClient,
 	log *slog.Logger,
@@ -64,37 +65,13 @@ func (u *UserAuthService) RegisterUser(email, password, name, role string) (stri
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	userID, err := u.storage.SaveUser(newUser)
+	_, err = u.storage.SaveUser(newUser)
 	if err != nil {
 		if errors.Is(err, storage.ErrFieldIsTooLong) {
 			log.Info("field is too long")
 			return "", fmt.Errorf("%s: %w", op, service.ErrFieldIsTooLong)
 		}
 		log.Error("save user failed", slog.String("errorType", err.Error()))
-		return "", err
-	}
-
-	if role == "client" {
-		newClient := &models.Client{
-			UserID:    uint(userID),
-			TrainerID: 0,
-			Height:    0,
-			Weight:    0,
-			BodyFat:   0,
-		}
-		err = u.storage.SaveClient(newClient)
-	} else if role == "trainer" {
-		newTrainer := &models.Trainer{
-			UserID:         uint(userID),
-			Qualifications: "",
-			Experience:     "",
-			Achievements:   "",
-		}
-		err = u.storage.SaveTrainer(newTrainer)
-	}
-
-	if err != nil {
-		log.Error(fmt.Sprintf("could not save new %s", role))
 		return "", err
 	}
 

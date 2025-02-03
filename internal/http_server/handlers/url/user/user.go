@@ -1,4 +1,4 @@
-package use
+package userhandler
 
 import (
 	"ChadProgress/internal/lib/api/response"

@@ -135,7 +135,7 @@ func (c *AuthServiceClient) ValidateToken(ctx context.Context, token string) (st
 		slog.String("op", op),
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseUrl+"/validate", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseUrl+"/validate", nil)
 	if err != nil {
 		return "", err
 	}

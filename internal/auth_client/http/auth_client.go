@@ -74,7 +74,7 @@ func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_clien
 	err = json.NewDecoder(resp.Body).Decode(&regResp)
 	if err != nil {
 		log.Error("error occurred: " + err.Error())
-		return nil, fmt.Errorf("failed to parse response from auth service")
+		return nil, errors.New("failed to parse response from auth service")
 	}
 	return &regResp, nil
 }

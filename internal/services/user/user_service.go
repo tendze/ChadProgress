@@ -3,16 +3,12 @@ package userservice
 import (
 	"ChadProgress/internal/auth_client"
 	"ChadProgress/internal/models"
+	"ChadProgress/internal/services"
 	"ChadProgress/storage"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-)
-
-var (
-	ErrUserAlreadyExists = fmt.Errorf("user already exists")
-	ErrFieldIsTooLong    = fmt.Errorf("field is too long")
 )
 
 type AuthServiceClient interface {
@@ -47,7 +43,7 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 	_, err := u.storage.GetUser(email)
 	if err == nil {
 		log.Info("user already exists")
-		return "", fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
+		return "", fmt.Errorf("%s: %w", op, service.ErrUserAlreadyExists)
 	}
 
 	newUser := &models.User{
@@ -71,7 +67,7 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 	if err != nil {
 		if errors.Is(err, storage.ErrFieldIsTooLong) {
 			log.Info("field is too long")
-			return "", fmt.Errorf("%s: %w", op, ErrFieldIsTooLong)
+			return "", fmt.Errorf("%s: %w", op, service.ErrFieldIsTooLong)
 		}
 		log.Error("save user failed", slog.String("errorType", err.Error()))
 		return "", err
@@ -103,4 +99,8 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 
 	jwtToken := resp.Token
 	return jwtToken, nil
+}
+
+func (u *UserService) Login(login, password string) (string, error) {
+	return "", nil
 }

@@ -1,4 +1,4 @@
-package userservice
+package userauthservice
 
 import (
 	"ChadProgress/internal/auth_client"
@@ -16,7 +16,7 @@ type AuthServiceClient interface {
 	LoginUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserLoginResponse, error)
 }
 
-type UserService struct {
+type UserAuthService struct {
 	storage    storage.Storage
 	authClient AuthServiceClient
 	log        *slog.Logger
@@ -26,8 +26,8 @@ func NewUserService(
 	storage storage.Storage,
 	authServiceClient AuthServiceClient,
 	log *slog.Logger,
-) *UserService {
-	return &UserService{
+) *UserAuthService {
+	return &UserAuthService{
 		storage:    storage,
 		authClient: authServiceClient,
 		log:        log,
@@ -35,7 +35,7 @@ func NewUserService(
 }
 
 // RegisterUser This function returns token from side authorization service and error
-func (u *UserService) RegisterUser(email, password, name, role string) (string, error) {
+func (u *UserAuthService) RegisterUser(email, password, name, role string) (string, error) {
 	const op = "services.user.user_service.RegisterUser"
 	log := u.log.With(
 		slog.String("op", op),
@@ -102,7 +102,7 @@ func (u *UserService) RegisterUser(email, password, name, role string) (string, 
 	return jwtToken, nil
 }
 
-func (u *UserService) Login(email, password string) (string, error) {
+func (u *UserAuthService) Login(email, password string) (string, error) {
 	const op = "services.user.user_service.Login"
 	log := u.log.With(
 		slog.String("op", op),

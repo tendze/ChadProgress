@@ -1,12 +1,12 @@
 package main
 
 import (
-	auth_client "ChadProgress/internal/auth_client/http"
+	authclient "ChadProgress/internal/auth_client/http"
 	"ChadProgress/internal/config"
-	"ChadProgress/internal/http_server/handlers/url/user/reg"
+	"ChadProgress/internal/http_server/handlers/url/authorization"
 	"ChadProgress/internal/lib/logger/handlers/slogpretty"
 	http2 "ChadProgress/internal/middleware/auth"
-	userservice "ChadProgress/internal/services/user"
+	userauthservice "ChadProgress/internal/services/auth"
 	"ChadProgress/storage/postgres"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -39,9 +39,9 @@ func main() {
 		log.Error("failed to init storage:", err)
 	}
 
-	authServiceClient := auth_client.NewAuthClient(cfg.AuthClient.BaseURL, log, time.Second*10)
-	userService := userservice.NewUserService(storage, authServiceClient, log)
-	userHandler := reg.NewUserHandler(userService, log)
+	authServiceClient := authclient.NewAuthClient(cfg.AuthClient.BaseURL, log, time.Second*10)
+	userAuthService := userauthservice.NewUserService(storage, authServiceClient, log)
+	userHandler := authorization.NewUserAuthHandler(userAuthService, log)
 
 	router := chi.NewRouter()
 
@@ -57,13 +57,13 @@ func main() {
 	authMiddleware := http2.AuthMiddleware(authServiceClient)
 
 	// Open endpoints
-	router.Route("/user", func(r chi.Router) {
+	router.Route("/authorization", func(r chi.Router) {
 		router.Post("/register", userHandler.Register)
 		router.Post("/login", userHandler.Login)
 	})
 
 	// Protected endpoints
-	router.Route("/app", func(r chi.Router) {
+	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
 	})
 

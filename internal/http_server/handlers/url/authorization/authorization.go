@@ -1,4 +1,4 @@
-package reg
+package authorization
 
 import (
 	"ChadProgress/internal/lib/api/response"
@@ -35,24 +35,24 @@ type LoginResponse struct {
 	Message  string `json:"message,omitempty"`
 }
 
-type UserService interface {
+type UserAuthService interface {
 	RegisterUser(email, password, name, role string) (string, error)
 	Login(email, password string) (string, error)
 }
 
-type UserHandler struct {
-	userService UserService
+type UserAuthHandler struct {
+	userService UserAuthService
 	log         *slog.Logger
 }
 
-func NewUserHandler(
-	service UserService,
+func NewUserAuthHandler(
+	service UserAuthService,
 	log *slog.Logger,
-) *UserHandler {
-	return &UserHandler{userService: service, log: log}
+) *UserAuthHandler {
+	return &UserAuthHandler{userService: service, log: log}
 }
 
-func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (u *UserAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.url.user.reg.Register"
 	log := u.log.With(
 		slog.String("op", op),
@@ -105,7 +105,7 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, regResponseOK(jwtToken))
 }
 
-func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (u *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.url.user.reg.Login"
 	log := u.log.With(
 		slog.String("op", op),
@@ -125,7 +125,6 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("login request body decoded", slog.Any("request", req))
 	if err = validator.New().Struct(req); err != nil {
 		validationErr := err.(validator.ValidationErrors)
 		log.Error("invalid request", validationErr.Error())
@@ -133,6 +132,7 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, response.ValidationError(validationErr))
 		return
 	}
+	log.Info("login request body decoded", slog.Any("request", req))
 
 	jwtToken, err := u.userService.Login(req.Email, req.Password)
 

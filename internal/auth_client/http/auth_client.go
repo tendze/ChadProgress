@@ -1,4 +1,4 @@
-package auth_client
+package authclient
 
 import (
 	"ChadProgress/internal/auth_client"

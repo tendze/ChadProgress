@@ -17,20 +17,20 @@ type CreateTrainerProfileRequest struct {
 	Achievement   string `json:"achievement" validate:"required"`
 }
 
-type CreateTrainerProfileResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-
 type CreateClientRequest struct {
 	Height  float64 `json:"height"`
 	Weight  float64 `json:"weight"`
 	BodyFat float64 `json:"bodyfat"`
 }
 
+type SelectTrainerRequest struct {
+	TrainerID uint `json:"trainer-id"`
+}
+
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
 	CreateClient(userEmail string, height, weight, bodyFatPercent float64) error
+	SelectTrainer(userEmail string, trainerID uint) error
 }
 
 type UserHandler struct {
@@ -143,6 +143,42 @@ func (u *UserHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
 
 		log.Error("failed to save client " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to save client"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, response.OK())
+}
+
+func (u *UserHandler) SelectTrainer(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.SelectTrainer"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	var req SelectTrainerRequest
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Error("failed to decode request body", err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
+		return
+	}
+	if req.TrainerID <= 0 {
+		log.Error("invalid trainer id to bind")
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("invalid trainer id to bind"))
+		return
+	}
+
+	err = u.userService.SelectTrainer(userEmail, req.TrainerID)
+	if err != nil {
+		log.Error("failed to bind client to trainer")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to bind client to trainer"))
 		return
 	}
 

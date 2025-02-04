@@ -22,8 +22,15 @@ type CreateTrainerProfileResponse struct {
 	Error  string `json:"error"`
 }
 
+type CreateClientRequest struct {
+	Height  float64 `json:"height"`
+	Weight  float64 `json:"weight"`
+	BodyFat float64 `json:"bodyfat"`
+}
+
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
+	CreateClient(height, weight, bodyFatPercent float64) error
 }
 
 type UserHandler struct {
@@ -77,6 +84,38 @@ func (u *UserHandler) CreateTrainer(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Error("create trainer failed: " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("create trainer failed"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, response.OK())
+}
+
+func (u *UserHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.CreateClient"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	var req CreateClientRequest
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Error("failed to decode request body", err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
+		return
+	}
+
+	log.Info("user email extracted from context", slog.String("email", userEmail))
+	err = u.userService.CreateClient(req.Height, req.Weight, req.BodyFat)
+
+	if err != nil {
+		log.Error("failed to save client " + err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to save client"))
 		return
 	}
 

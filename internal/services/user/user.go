@@ -2,6 +2,8 @@ package userservice
 
 import (
 	"ChadProgress/internal/models"
+	service "ChadProgress/internal/services"
+	"ChadProgress/storage"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +12,7 @@ import (
 type Storage interface {
 	GetUser(email string) (*models.User, error)
 	SaveTrainer(trainer *models.Trainer) error
+	SaveClient(client *models.Client) error
 }
 
 type UserService struct {
@@ -48,6 +51,9 @@ func (u *UserService) CreateTrainer(userEmail, qualification, experience, achiev
 
 	err := u.storage.SaveTrainer(newTrainer)
 	if err != nil {
+		if errors.Is(err, storage.ErrDuplicateKey) {
+			return service.ErrDuplicateKey
+		}
 		return err
 	}
 

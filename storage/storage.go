@@ -2,14 +2,14 @@ package storage
 
 import (
 	"ChadProgress/internal/models"
-	"fmt"
+	"errors"
 )
 
 var (
-	ErrUserAlreadyExists  = fmt.Errorf("user already exists")
-	ErrUserNotFound       = fmt.Errorf("user not found")
-	ErrFieldIsTooLong     = fmt.Errorf("field is too long")
-	ErrInvalidCredentials = fmt.Errorf("invalid credentials")
+	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserNotFound      = errors.New("user not found")
+	ErrFieldIsTooLong    = errors.New("field is too long")
+	ErrDuplicateKey      = errors.New("duplicate key value violates unique constraint")
 )
 
 type Storage interface {

@@ -3,6 +3,8 @@ package userhandler
 import (
 	"ChadProgress/internal/lib/api/response"
 	"ChadProgress/internal/models"
+	service "ChadProgress/internal/services"
+	"errors"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
@@ -68,7 +70,12 @@ func (u *UserHandler) CreateTrainer(w http.ResponseWriter, r *http.Request) {
 	err = u.userService.CreateTrainer(userEmail, req.Qualification, req.Experience, req.Achievement)
 
 	if err != nil {
-		log.Error("create trainer failed")
+		if errors.Is(err, service.ErrDuplicateKey) {
+			log.Error("trainer already exists")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer already exists"))
+			return
+		}
+		log.Error("create trainer failed: " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("create trainer failed"))
 		return
 	}

@@ -85,6 +85,9 @@ func (s *Storage) SaveClient(client *models.Client) error {
 	const op = "postgres.SaveClient"
 	result := s.DB.Create(client)
 	if result.Error != nil {
+		if isDuplicateKeyError(result.Error) {
+			return fmt.Errorf("%s: %w", op, storage.ErrDuplicateKey)
+		}
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
 	return nil
@@ -94,6 +97,9 @@ func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
 	const op = "postgres.SaveTrainer"
 	result := s.DB.Create(trainer)
 	if result.Error != nil {
+		if isDuplicateKeyError(result.Error) {
+			return fmt.Errorf("%s: %w", op, storage.ErrDuplicateKey)
+		}
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
 	return nil
@@ -113,9 +119,13 @@ func (s *Storage) GetUser(email string) (*models.User, error) {
 }
 
 func isInvalidEnumError(err error) bool {
-	return strings.Contains(err.Error(), "SQLSTATE 23505")
+	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }
 
 func isTooLongFieldError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22001")
+}
+
+func isDuplicateKeyError(err error) bool {
+	return strings.Contains(err.Error(), "SQLSTATE 23505")
 }

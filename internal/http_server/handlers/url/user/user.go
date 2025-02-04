@@ -85,6 +85,10 @@ func (u *UserHandler) CreateTrainer(w http.ResponseWriter, r *http.Request) {
 			log.Error("one of fields is too long")
 			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("too long field"))
 			return
+		} else if errors.Is(err, service.ErrInvalidRoleRequest) {
+			log.Error("invalid role request")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("cannot create trainer profile while being client"))
+			return
 		}
 		log.Error("create trainer failed: " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("create trainer failed"))
@@ -130,6 +134,10 @@ func (u *UserHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
 		} else if errors.Is(err, service.ErrFieldIsTooLong) {
 			log.Error("one of fields is too long")
 			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("too long field"))
+			return
+		} else if errors.Is(err, service.ErrInvalidRoleRequest) {
+			log.Error("invalid role request")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("cannot create client profile while being trainer"))
 			return
 		}
 

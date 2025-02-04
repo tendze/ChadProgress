@@ -41,6 +41,10 @@ func (u *UserService) CreateTrainer(userEmail, qualification, experience, achiev
 		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
 		return errors.New("user not found")
 	}
+	if user.Role == "client" {
+		log.Error(fmt.Sprintf("user with email <%s> tried to create trainer profile while being client"))
+		return service.ErrInvalidRoleRequest
+	}
 
 	newTrainer := &models.Trainer{
 		UserID:         user.ID,

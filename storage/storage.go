@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrUserAlreadyExists = errors.New("user already exists")
-	ErrUserNotFound      = errors.New("user not found")
+	ErrRecordNotFound    = errors.New("user not found")
 	ErrFieldIsTooLong    = errors.New("field is too long")
 	ErrDuplicateKey      = errors.New("duplicate key value violates unique constraint")
 )

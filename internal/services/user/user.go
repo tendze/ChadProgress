@@ -10,9 +10,12 @@ import (
 )
 
 type Storage interface {
-	GetUser(email string) (*models.User, error)
+	GetUserByEmail(email string) (*models.User, error)
+	GetTrainerByID(id uint) (*models.Trainer, error)
+	GetClientByUserID(id uint) (*models.Client, error)
 	SaveTrainer(trainer *models.Trainer) error
 	SaveClient(client *models.Client) error
+	UpdateTrainerID(clientID, trainerID uint) error
 }
 
 type UserService struct {
@@ -36,12 +39,12 @@ func (u *UserService) CreateTrainer(userEmail, qualification, experience, achiev
 		slog.String("op", op),
 	)
 
-	user, _ := u.storage.GetUser(userEmail)
+	user, _ := u.storage.GetUserByEmail(userEmail)
 	if user == nil {
 		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
 		return errors.New("user not found")
 	}
-	if user.Role == "client" {
+	if user.Role == models.RoleClient {
 		log.Error(fmt.Sprintf("user with email <%s> tried to create trainer profile while being client"))
 		return service.ErrInvalidRoleRequest
 	}
@@ -72,17 +75,23 @@ func (u *UserService) CreateClient(userEmail string, height, weight, bodyFat flo
 		slog.String("op", op),
 	)
 
-	user, _ := u.storage.GetUser(userEmail)
+	user, _ := u.storage.GetUserByEmail(userEmail)
 	if user == nil {
 		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
 		return errors.New("user not found")
 	}
+	if user.Role == models.RoleTrainer {
+		log.Error(fmt.Sprintf("trainer cant create client profile"))
+		return service.ErrInvalidRoleRequest
+	}
 
+	//TODO: make one default row in database, чтобы все новые ссылались на него
 	newClient := &models.Client{
-		UserID:  user.ID,
-		Height:  height,
-		Weight:  weight,
-		BodyFat: bodyFat,
+		UserID:    user.ID,
+		TrainerID: 1,
+		Height:    height,
+		Weight:    weight,
+		BodyFat:   bodyFat,
 	}
 
 	err := u.storage.SaveClient(newClient)
@@ -93,6 +102,44 @@ func (u *UserService) CreateClient(userEmail string, height, weight, bodyFat flo
 		} else if errors.Is(err, storage.ErrFieldIsTooLong) {
 			return fmt.Errorf("%s: %w", op, service.ErrFieldIsTooLong)
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserService) SelectTrainer(userEmail string, trainerID uint) error {
+	const op = "services.user.user.SelectTrainer"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	clientUser, _ := u.storage.GetUserByEmail(userEmail)
+	if clientUser == nil {
+		log.Error(fmt.Sprintf("profile with email <%s> not found", userEmail))
+		return service.ErrUserNotFound
+	}
+	if clientUser.Role != models.RoleClient {
+		log.Error(fmt.Sprintf("trainer cant select trainer"))
+		return service.ErrInvalidRoleRequest
+	}
+
+	client, _ := u.storage.GetClientByUserID(clientUser.ID)
+	if client == nil {
+		log.Error(fmt.Sprintf("client profile with email <%s> not found", userEmail))
+		return service.ErrClientNotFound
+	}
+
+	trainer, err := u.storage.GetTrainerByID(trainerID)
+	if err != nil {
+		return service.ErrTrainerNotFound
+	}
+	if trainer.Status != models.StatusActive {
+		return service.ErrNotActiveTrainer
+	}
+
+	err = u.storage.UpdateTrainerID(client.ID, trainerID)
+	if err != nil {
 		return err
 	}
 

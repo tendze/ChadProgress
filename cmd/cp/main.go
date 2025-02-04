@@ -38,7 +38,8 @@ func main() {
 
 	storage, err := postgres.New(dsn)
 	if err != nil {
-		log.Error("failed to init storage:", err)
+		log.Error("failed to init storage:", slog.String("errormsg", err.Error()))
+		return
 	}
 
 	authServiceClient := authclient.NewAuthClient(cfg.AuthClient.BaseURL, log, time.Second*10)
@@ -71,7 +72,9 @@ func main() {
 	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
+
 		r.Post("/clients/profile", userHandler.CreateClient)
+		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))

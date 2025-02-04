@@ -24,7 +24,7 @@ type CreateClientRequest struct {
 }
 
 type SelectTrainerRequest struct {
-	TrainerID uint `json:"trainer-id"`
+	TrainerID uint `json:"trainer-id" validate:"required"`
 }
 
 type UserService interface {
@@ -169,6 +169,15 @@ func (u *UserHandler) SelectTrainer(w http.ResponseWriter, r *http.Request) {
 		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
 		return
 	}
+
+	log.Info("request body decoded", slog.Any("request", req))
+	if err = validator.New().Struct(req); err != nil {
+		validationErr := err.(validator.ValidationErrors)
+		log.Error("invalid request", slog.String("errormsg", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+		return
+	}
+
 	if req.TrainerID <= 0 {
 		log.Error("invalid trainer id to bind")
 		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("invalid trainer id to bind"))
@@ -177,6 +186,20 @@ func (u *UserHandler) SelectTrainer(w http.ResponseWriter, r *http.Request) {
 
 	err = u.userService.SelectTrainer(userEmail, req.TrainerID)
 	if err != nil {
+		if errors.Is(err, service.ErrClientNotFound) {
+			log.Error("client's profile does not exist")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client's profile does not exist"))
+			return
+		} else if errors.Is(err, service.ErrTrainerNotFound) {
+			log.Error("trainer's profile does not exist")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer's profile does not exist"))
+			return
+		} else if errors.Is(err, service.ErrNotActiveTrainer) {
+			log.Error("not active trainer")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer is busy or on vacation"))
+			return
+		}
+
 		log.Error("failed to bind client to trainer")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to bind client to trainer"))
 		return

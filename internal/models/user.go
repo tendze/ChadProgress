@@ -2,6 +2,11 @@ package models
 
 import "time"
 
+var (
+	RoleTrainer = "trainer"
+	RoleClient  = "client"
+)
+
 type User struct {
 	ID           uint      `gorm:"primaryKey"`
 	Email        string    `gorm:"type:varchar(100);unique;not null"`

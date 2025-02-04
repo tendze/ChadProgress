@@ -16,15 +16,20 @@ type AuthServiceClient interface {
 	LoginUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserLoginResponse, error)
 }
 
+type Storage interface {
+	GetUserByEmail(email string) (*models.User, error)
+	SaveUser(user *models.User) (int64, error)
+}
+
 type UserAuthService struct {
 	// TODO: MAKE OWN STORAGE INTERFACE
-	storage    storage.Storage
+	storage    Storage
 	authClient AuthServiceClient
 	log        *slog.Logger
 }
 
 func NewUserAuthService(
-	storage storage.Storage,
+	storage Storage,
 	authServiceClient AuthServiceClient,
 	log *slog.Logger,
 ) *UserAuthService {
@@ -42,7 +47,7 @@ func (u *UserAuthService) RegisterUser(email, password, name, role string) (stri
 		slog.String("op", op),
 	)
 
-	_, err := u.storage.GetUser(email)
+	_, err := u.storage.GetUserByEmail(email)
 	if err == nil {
 		log.Info("user already exists")
 		return "", fmt.Errorf("%s: %w", op, service.ErrUserAlreadyExists)

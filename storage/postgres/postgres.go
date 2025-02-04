@@ -24,7 +24,12 @@ func New(dsn string) (*Storage, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = createEnum(db)
+	err = createRoleEnum(db)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	err = createTrainerStatusEnum(db)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -33,10 +38,15 @@ func New(dsn string) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
+	err = createDummyTrainer(db)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
 	return &Storage{DB: db}, nil
 }
 
-func createEnum(db *gorm.DB) error {
+func createRoleEnum(db *gorm.DB) error {
 	var exists bool
 	err := db.Raw(`
 		SELECT EXISTS (
@@ -53,6 +63,57 @@ func createEnum(db *gorm.DB) error {
 		return db.Exec(`CREATE TYPE role_enum AS ENUM ('trainer', 'client');`).Error
 	}
 
+	return nil
+}
+
+func createTrainerStatusEnum(db *gorm.DB) error {
+	var exists bool
+	err := db.Raw(`
+		SELECT EXISTS (
+			SELECT 1 
+			FROM pg_type 
+			WHERE typname = 'status'
+		);
+	`).Scan(&exists).Error
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return db.Exec(`CREATE TYPE status AS ENUM ('ACTIVE', 'BUSY', 'ON_VACATION');`).Error
+	}
+
+	return nil
+}
+
+// createDummyTrainer required init function. generates first dummy trainer that every new client will link to by default
+func createDummyTrainer(db *gorm.DB) error {
+	var dummyTrainer models.Trainer
+	if err := db.Where("id = 1").First(&dummyTrainer).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		user := models.User{
+			Email: "dummytrainer@mail.ru",
+			Name:  "Dummy Trainer",
+			Role:  "trainer",
+		}
+		if err = db.Create(&user).Error; err != nil {
+			return err
+		}
+
+		defaultTrainer := models.Trainer{
+			UserID:         user.ID,
+			Qualifications: "I'm dummy!",
+			Experience:     "I'm dummy!",
+			Achievements:   "I'm dummy!",
+			Status:         models.StatusActive,
+		}
+		if err = db.Create(&defaultTrainer).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -109,17 +170,61 @@ func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
 	return nil
 }
 
-func (s *Storage) GetUser(email string) (*models.User, error) {
+func (s *Storage) GetUserByEmail(email string) (*models.User, error) {
 	const op = "postgres.GetUser"
 	var user models.User
 	result := s.DB.First(&user, "email = ?", email)
 	if err := result.Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return &user, nil
+}
+
+func (s *Storage) GetTrainerByID(id uint) (*models.Trainer, error) {
+	const op = "postgres.GetTrainer"
+	var trainer models.Trainer
+	result := s.DB.First(&trainer, "id = ?", id)
+	if err := result.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return &trainer, nil
+}
+
+func (s *Storage) GetClientByID(id uint) (*models.Client, error) {
+	const op = "postgres.GetClient"
+	var client models.Client
+	result := s.DB.First(&client, "id = ?", id)
+	if err := result.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return &client, nil
+}
+
+func (s *Storage) GetClientByUserID(userID uint) (*models.Client, error) {
+	const op = "postgres.GetClient"
+	var client models.Client
+	result := s.DB.First(&client, "user_id = ?", userID)
+	if err := result.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return &client, nil
+}
+
+func (s *Storage) UpdateTrainerID(clientID, trainerID uint) error {
+	// TODO: return more detailed error
+	return s.DB.Model(&models.Client{}).Where("id = ?", clientID).Update("trainer_id", trainerID).Error
 }
 
 func isInvalidEnumError(err error) bool {

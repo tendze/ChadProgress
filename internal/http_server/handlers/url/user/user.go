@@ -34,6 +34,9 @@ type GetClientProfileResponse struct {
 }
 
 type GetTrainerProfileResponse struct {
+	Qualification string `json:"height"`
+	Experience    string `json:"experience"`
+	Achievements  string `json:"achievements"`
 }
 
 type UserService interface {
@@ -41,6 +44,7 @@ type UserService interface {
 	CreateClient(userEmail string, height, weight, bodyFatPercent float64) error
 	SelectTrainer(userEmail string, trainerID uint) error
 	GetClientProfile(userEmail string) (*models.Client, error)
+	GetTrainerProfile(userEmail string) (*models.Trainer, error)
 }
 
 type UserHandler struct {
@@ -242,6 +246,34 @@ func (u *UserHandler) GetClientProfile(w http.ResponseWriter, r *http.Request) {
 		BodyFat: client.BodyFat,
 		Height:  client.Height,
 		Weight:  client.Weight,
+	}
+	setHeaderRenderJSON(w, r, http.StatusOK, clientResp)
+}
+
+func (u *UserHandler) GetTrainerProfile(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.GetTrainerProfile"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	trainer, err := u.userService.GetTrainerProfile(userEmail)
+	if err != nil {
+		log.Error("failed to get trainer profile")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	clientResp := GetTrainerProfileResponse{
+		Qualification: trainer.Qualifications,
+		Experience:    trainer.Experience,
+		Achievements:  trainer.Achievements,
 	}
 	setHeaderRenderJSON(w, r, http.StatusOK, clientResp)
 }

@@ -145,3 +145,27 @@ func (u *UserService) SelectTrainer(userEmail string, trainerID uint) error {
 
 	return nil
 }
+
+func (u *UserService) GetClientProfile(userEmail string) (*models.Client, error) {
+	const op = "services.user.user.GetClientProfile"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(userEmail)
+	if user == nil {
+		log.Error(fmt.Sprintf("profile with email <%s> not found", userEmail))
+		return nil, service.ErrUserNotFound
+	}
+	if user.Role != models.RoleClient {
+		log.Error(fmt.Sprintf("trainer cant get info about client"))
+		return nil, service.ErrInvalidRoleRequest
+	}
+
+	client, _ := u.storage.GetClientByUserID(user.ID)
+	if client == nil {
+		return nil, service.ErrClientNotFound
+	}
+
+	return client, nil
+}

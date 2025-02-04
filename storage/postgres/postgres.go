@@ -87,6 +87,8 @@ func (s *Storage) SaveClient(client *models.Client) error {
 	if result.Error != nil {
 		if isDuplicateKeyError(result.Error) {
 			return fmt.Errorf("%s: %w", op, storage.ErrDuplicateKey)
+		} else if isTooLongFieldError(result.Error) {
+			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
@@ -99,6 +101,8 @@ func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
 	if result.Error != nil {
 		if isDuplicateKeyError(result.Error) {
 			return fmt.Errorf("%s: %w", op, storage.ErrDuplicateKey)
+		} else if isTooLongFieldError(result.Error) {
+			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}

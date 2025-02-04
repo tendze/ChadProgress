@@ -53,6 +53,41 @@ func (u *UserService) CreateTrainer(userEmail, qualification, experience, achiev
 	if err != nil {
 		if errors.Is(err, storage.ErrDuplicateKey) {
 			return service.ErrDuplicateKey
+		} else if errors.Is(err, storage.ErrFieldIsTooLong) {
+			return fmt.Errorf("%s: %w", op, service.ErrFieldIsTooLong)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserService) CreateClient(userEmail string, height, weight, bodyFat float64) error {
+	const op = "services.user.user.CreateClient"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUser(userEmail)
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
+		return errors.New("user not found")
+	}
+
+	newClient := &models.Client{
+		UserID:  user.ID,
+		Height:  height,
+		Weight:  weight,
+		BodyFat: bodyFat,
+	}
+
+	err := u.storage.SaveClient(newClient)
+
+	if err != nil {
+		if errors.Is(err, storage.ErrDuplicateKey) {
+			return service.ErrDuplicateKey
+		} else if errors.Is(err, storage.ErrFieldIsTooLong) {
+			return fmt.Errorf("%s: %w", op, service.ErrFieldIsTooLong)
 		}
 		return err
 	}

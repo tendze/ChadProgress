@@ -71,6 +71,7 @@ func main() {
 	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
+		r.Post("/clients/profile", userHandler.CreateClient)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))

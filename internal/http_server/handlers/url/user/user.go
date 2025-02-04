@@ -30,7 +30,7 @@ type CreateClientRequest struct {
 
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
-	CreateClient(height, weight, bodyFatPercent float64) error
+	CreateClient(userEmail string, height, weight, bodyFatPercent float64) error
 }
 
 type UserHandler struct {
@@ -81,6 +81,10 @@ func (u *UserHandler) CreateTrainer(w http.ResponseWriter, r *http.Request) {
 			log.Error("trainer already exists")
 			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer already exists"))
 			return
+		} else if errors.Is(err, service.ErrFieldIsTooLong) {
+			log.Error("one of fields is too long")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("too long field"))
+			return
 		}
 		log.Error("create trainer failed: " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("create trainer failed"))
@@ -109,11 +113,26 @@ func (u *UserHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
 		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
 		return
 	}
+	if req.Height < 0.0 || req.Weight < 0.0 || req.BodyFat < 0.0 {
+		log.Info("invalid request. negative parameter")
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("negative parameter"))
+		return
+	}
 
 	log.Info("user email extracted from context", slog.String("email", userEmail))
-	err = u.userService.CreateClient(req.Height, req.Weight, req.BodyFat)
+	err = u.userService.CreateClient(userEmail, req.Height, req.Weight, req.BodyFat)
 
 	if err != nil {
+		if errors.Is(err, service.ErrDuplicateKey) {
+			log.Error("client already exists")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer already exists"))
+			return
+		} else if errors.Is(err, service.ErrFieldIsTooLong) {
+			log.Error("one of fields is too long")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("too long field"))
+			return
+		}
+
 		log.Error("failed to save client " + err.Error())
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to save client"))
 		return

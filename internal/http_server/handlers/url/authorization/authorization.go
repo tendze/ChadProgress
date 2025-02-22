@@ -18,10 +18,8 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	Status   string      `json:"status"`
-	JWTToken string      `json:"token"`
-	Message  string      `json:"message,omitempty"`
-	Data     interface{} `json:"data,omitempty"`
+	Status   string `json:"status"`
+	JWTToken string `json:"token"`
 }
 
 type LoginRequest struct {
@@ -32,7 +30,6 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Status   string `json:"status"`
 	JWTToken string `json:"token,omitempty"`
-	Message  string `json:"message,omitempty"`
 }
 
 type UserAuthService interface {

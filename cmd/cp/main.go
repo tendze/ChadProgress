@@ -72,6 +72,7 @@ func main() {
 	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
+		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
 
 		r.Post("/clients/profile", userHandler.CreateClient)
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)

@@ -5,10 +5,11 @@ import (
 	"ChadProgress/internal/models"
 	service "ChadProgress/internal/services"
 	"errors"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 )
 
 type CreateTrainerProfileRequest struct {
@@ -45,6 +46,7 @@ type UserService interface {
 	SelectTrainer(userEmail string, trainerID uint) error
 	GetClientProfile(userEmail string) (*models.Client, error)
 	GetTrainerProfile(userEmail string) (*models.Trainer, error)
+	GetTrainersClients(userEmail string) ([]*models.Client, error)
 }
 
 type UserHandler struct {
@@ -237,6 +239,15 @@ func (u *UserHandler) GetClientProfile(w http.ResponseWriter, r *http.Request) {
 
 	client, err := u.userService.GetClientProfile(userEmail)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidRoleRequest) {
+			log.Info("invalid role request")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("you cant get info about client as a trainer"))
+			return
+		} else if errors.Is(err, service.ErrClientNotFound) {
+			log.Info("client profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client profile not found"))
+			return
+		}
 		log.Error("failed to get client profile")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
 		return
@@ -265,6 +276,11 @@ func (u *UserHandler) GetTrainerProfile(w http.ResponseWriter, r *http.Request) 
 
 	trainer, err := u.userService.GetTrainerProfile(userEmail)
 	if err != nil {
+		if errors.Is(err, service.ErrTrainerNotFound) {
+			log.Info("trainer profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer profile not found"))
+			return
+		}
 		log.Error("failed to get trainer profile")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
 		return
@@ -276,6 +292,34 @@ func (u *UserHandler) GetTrainerProfile(w http.ResponseWriter, r *http.Request) 
 		Achievements:  trainer.Achievements,
 	}
 	setHeaderRenderJSON(w, r, http.StatusOK, clientResp)
+}
+
+func (u *UserHandler) GetTrainersClients(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.GetTrainersClients"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	clients, err := u.userService.GetTrainersClients(userEmail)
+	if err != nil {
+		if errors.Is(err, service.ErrTrainerNotFound) {
+			log.Info("trainer profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("trainer profile not found"))
+			return
+		}
+		log.Error("failed to get trainer profile")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, clients)
 }
 
 func setHeaderRenderJSON(w http.ResponseWriter, r *http.Request, status int, v any) {

@@ -184,7 +184,7 @@ func (s *Storage) GetUserByEmail(email string) (*models.User, error) {
 }
 
 func (s *Storage) GetTrainerByID(id uint) (*models.Trainer, error) {
-	const op = "postgres.GetTrainer"
+	const op = "postgres.GetTrainerByID"
 	var trainer models.Trainer
 	result := s.DB.First(&trainer, "id = ?", id)
 	if err := result.Error; err != nil {
@@ -196,8 +196,21 @@ func (s *Storage) GetTrainerByID(id uint) (*models.Trainer, error) {
 	return &trainer, nil
 }
 
+func (s *Storage) GetTrainerByUserID(userID uint) (*models.Trainer, error) {
+	const op = "postgres.GetTrainerByUserID"
+	var trainer models.Trainer
+	result := s.DB.First(&trainer, "user_id = ?", userID)
+	if err := result.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return &trainer, nil
+}
+
 func (s *Storage) GetClientByID(id uint) (*models.Client, error) {
-	const op = "postgres.GetClient"
+	const op = "postgres.GetClientByID"
 	var client models.Client
 	result := s.DB.First(&client, "id = ?", id)
 	if err := result.Error; err != nil {
@@ -210,7 +223,7 @@ func (s *Storage) GetClientByID(id uint) (*models.Client, error) {
 }
 
 func (s *Storage) GetClientByUserID(userID uint) (*models.Client, error) {
-	const op = "postgres.GetClient"
+	const op = "postgres.GetClientByUserID"
 	var client models.Client
 	result := s.DB.First(&client, "user_id = ?", userID)
 	if err := result.Error; err != nil {

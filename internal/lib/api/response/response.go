@@ -34,7 +34,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 		case "email":
 			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid login", err.Field()))
 		case "password":
-			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid password", err.Field()))
+			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid email", err.Field()))
 		case "role":
 			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid role", err.Field()))
 		default:

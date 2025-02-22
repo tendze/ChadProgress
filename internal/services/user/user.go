@@ -12,6 +12,7 @@ import (
 type Storage interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetTrainerByID(id uint) (*models.Trainer, error)
+	GetTrainerByUserID(id uint) (*models.Trainer, error)
 	GetClientByUserID(id uint) (*models.Client, error)
 	SaveTrainer(trainer *models.Trainer) error
 	SaveClient(client *models.Client) error
@@ -154,7 +155,7 @@ func (u *UserService) GetClientProfile(userEmail string) (*models.Client, error)
 
 	user, _ := u.storage.GetUserByEmail(userEmail)
 	if user == nil {
-		log.Error(fmt.Sprintf("profile with email <%s> not found", userEmail))
+		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
 		return nil, service.ErrUserNotFound
 	}
 	if user.Role != models.RoleClient {
@@ -168,4 +169,25 @@ func (u *UserService) GetClientProfile(userEmail string) (*models.Client, error)
 	}
 
 	return client, nil
+}
+
+func (u *UserService) GetTrainerProfile(userEmail string) (*models.Trainer, error) {
+	const op = "services.user.user.GetTrainerProfile"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(userEmail)
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
+		return nil, service.ErrUserNotFound
+	}
+
+	trainer, _ := u.storage.GetTrainerByUserID(user.ID)
+	if trainer == nil {
+		log.Error(fmt.Sprintf("trainer profile not found"))
+		return nil, service.ErrTrainerNotFound
+	}
+
+	return trainer, nil
 }

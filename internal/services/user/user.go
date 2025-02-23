@@ -17,6 +17,7 @@ type Storage interface {
 	SaveTrainer(trainer *models.Trainer) error
 	SaveClient(client *models.Client) error
 	UpdateTrainerID(clientID, trainerID uint) error
+	GetTrainersClients(trainerID uint) ([]*models.Client, error)
 }
 
 type UserService struct {
@@ -190,4 +191,28 @@ func (u *UserService) GetTrainerProfile(userEmail string) (*models.Trainer, erro
 	}
 
 	return trainer, nil
+}
+
+func (u *UserService) GetTrainersClients(userEmail string) ([]*models.Client, error) {
+	const op = "services.user.user.GetTrainersClients"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(userEmail)
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
+		return nil, service.ErrUserNotFound
+	}
+
+	trainer, _ := u.storage.GetTrainerByUserID(user.ID)
+	if trainer == nil {
+		log.Error(fmt.Sprintf("trainer profile not found"))
+		return nil, service.ErrTrainerNotFound
+	}
+	clients, err := u.storage.GetTrainersClients(trainer.ID)
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
 }

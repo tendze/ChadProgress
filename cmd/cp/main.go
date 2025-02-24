@@ -73,6 +73,7 @@ func main() {
 		r.Use(authMiddleware)
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
 		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
+		r.Get("/trainers/clients", userHandler.GetTrainersClients)
 
 		r.Post("/clients/profile", userHandler.CreateClient)
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)

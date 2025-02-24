@@ -240,6 +240,15 @@ func (s *Storage) UpdateTrainerID(clientID, trainerID uint) error {
 	return s.DB.Model(&models.Client{}).Where("id = ?", clientID).Update("trainer_id", trainerID).Error
 }
 
+func (s *Storage) GetTrainersClients(trainerID uint) ([]models.Client, error) {
+	var clients []models.Client
+	res := s.DB.Where("trainer_id = ?", trainerID).Find(&clients)
+	if res.Error != nil {
+		return []models.Client{}, res.Error
+	}
+	return clients, nil
+}
+
 func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }

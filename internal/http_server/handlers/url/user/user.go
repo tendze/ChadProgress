@@ -46,7 +46,7 @@ type UserService interface {
 	SelectTrainer(userEmail string, trainerID uint) error
 	GetClientProfile(userEmail string) (*models.Client, error)
 	GetTrainerProfile(userEmail string) (*models.Trainer, error)
-	GetTrainersClients(userEmail string) ([]*models.Client, error)
+	GetTrainersClients(userEmail string) ([]models.Client, error)
 }
 
 type UserHandler struct {

@@ -17,7 +17,7 @@ type Storage interface {
 	SaveTrainer(trainer *models.Trainer) error
 	SaveClient(client *models.Client) error
 	UpdateTrainerID(clientID, trainerID uint) error
-	GetTrainersClients(trainerID uint) ([]*models.Client, error)
+	GetTrainersClients(trainerID uint) ([]models.Client, error)
 }
 
 type UserService struct {
@@ -193,7 +193,7 @@ func (u *UserService) GetTrainerProfile(userEmail string) (*models.Trainer, erro
 	return trainer, nil
 }
 
-func (u *UserService) GetTrainersClients(userEmail string) ([]*models.Client, error) {
+func (u *UserService) GetTrainersClients(userEmail string) ([]models.Client, error) {
 	const op = "services.user.user.GetTrainersClients"
 	log := u.log.With(
 		slog.String("op", op),

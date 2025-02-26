@@ -204,6 +204,10 @@ func (u *UserService) GetTrainersClients(userEmail string) ([]models.Client, err
 		log.Error(fmt.Sprintf("user with email <%s> not found", userEmail))
 		return nil, service.ErrUserNotFound
 	}
+	if user.Role != models.RoleTrainer {
+		log.Error(fmt.Sprintf("clients do not have clients"))
+		return nil, service.ErrInvalidRoleRequest
+	}
 
 	trainer, _ := u.storage.GetTrainerByUserID(user.ID)
 	if trainer == nil {

@@ -249,6 +249,18 @@ func (s *Storage) GetTrainersClients(trainerID uint) ([]models.Client, error) {
 	return clients, nil
 }
 
+func (s *Storage) CreatePlan(plan *models.TrainingPlan) error {
+	const op = "postgres.CreatePlan"
+	result := s.DB.Create(plan)
+	if result.Error != nil {
+		if isTooLongFieldError(result.Error) {
+			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
+		}
+		return fmt.Errorf("%s: %w", op, result.Error)
+	}
+	return nil
+}
+
 func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }

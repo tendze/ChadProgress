@@ -116,6 +116,7 @@ func (u *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req LoginRequest
 	err := render.DecodeJSON(r.Body, &req)
+	log.Info("req", req)
 	if err != nil {
 		log.Error("failed to decode request body", err.Error())
 		render.JSON(w, r, response.Error("failed to decode request body"))

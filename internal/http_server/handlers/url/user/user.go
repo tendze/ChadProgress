@@ -41,7 +41,7 @@ type GetTrainerProfileResponse struct {
 }
 
 type CreatePlanRequest struct {
-	ClientID    uint   `json:"client_id" validate:"required"`
+	ClientID    uint   `json:"client-id" validate:"required"`
 	Description string `json:"description" validate:"required"`
 	Schedule    string `json:"schedule" validate:"required"`
 }

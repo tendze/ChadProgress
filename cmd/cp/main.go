@@ -12,6 +12,7 @@ import (
 	"ChadProgress/storage/postgres"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -62,6 +63,13 @@ func main() {
 
 	authMiddleware := http2.AuthMiddleware(authServiceClient)
 
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Разрешаем все источники
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+	}))
+
 	// Open endpoints
 	router.Route("/authorization", func(r chi.Router) {
 		r.Post("/register", userAuthHandler.Register)
@@ -74,6 +82,7 @@ func main() {
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
 		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
 		r.Get("/trainers/clients", userHandler.GetTrainersClients)
+		r.Post("/training-plan", userHandler.CreatePlan)
 
 		r.Post("/clients/profile", userHandler.CreateClient)
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)

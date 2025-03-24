@@ -88,7 +88,6 @@ func (u *UserService) CreateClient(userEmail string, height, weight, bodyFat flo
 		return service.ErrInvalidRoleRequest
 	}
 
-	//TODO: make one default row in database, чтобы все новые ссылались на него
 	newClient := &models.Client{
 		UserID:    user.ID,
 		TrainerID: 1,

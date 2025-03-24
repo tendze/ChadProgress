@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -46,14 +47,23 @@ type CreatePlanRequest struct {
 	Schedule    string `json:"schedule" validate:"required"`
 }
 
+type AddMetricsRequest struct {
+	ClientID   uint      `json:"client-id" validate:"required"`
+	Weight     float64   `json:"weight"`
+	BodyFat    float64   `json:"bodyfat"`
+	BMI        float64   `json:"bmi"`
+	MeasuredAt time.Time `json:"measured-at"`
+}
+
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
-	CreateClient(userEmail string, height, weight, bodyFatPercent float64) error
+	CreateClient(userEmail string, height, weight, bodyFat float64) error
 	SelectTrainer(userEmail string, trainerID uint) error
 	GetClientProfile(userEmail string) (*models.Client, error)
 	GetTrainerProfile(userEmail string) (*models.Trainer, error)
 	GetTrainersClients(userEmail string) ([]models.Client, error)
 	CreatePlan(trainerEmail string, clientID uint, description, schedule string) error
+	AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error
 }
 
 type UserHandler struct {
@@ -359,6 +369,7 @@ func (u *UserHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = u.userService.CreatePlan(userEmail, req.ClientID, req.Description, req.Schedule)
+
 	if err != nil {
 		if errors.Is(err, service.ErrTrainerNotFound) {
 			log.Info("trainer profile not found")
@@ -366,6 +377,51 @@ func (u *UserHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Error("failed to get trainer profile")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, response.OK())
+}
+
+func (u *UserHandler) AddMetrics(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.AddMetrics"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	var req AddMetricsRequest
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Error("failed to decode request body", err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
+		return
+	}
+
+	log.Info("request body decoded", slog.Any("request", req))
+	if err = validator.New().Struct(req); err != nil {
+		validationErr := err.(validator.ValidationErrors)
+		log.Error("invalid request", slog.String("errormsg", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+		return
+	}
+
+	err = u.userService.AddMetrics(userEmail, req.Weight, req.BodyFat, req.BMI, req.MeasuredAt)
+
+	if err != nil {
+		if errors.Is(err, service.ErrClientNotFound) {
+			log.Info("client profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client profile not found"))
+			return
+		}
+		log.Error("failed to get client profile")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
 		return
 	}

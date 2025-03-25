@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 )
 
 type Storage interface {
@@ -19,6 +20,7 @@ type Storage interface {
 	UpdateTrainerID(clientID, trainerID uint) error
 	GetTrainersClients(trainerID uint) ([]models.Client, error)
 	CreatePlan(plan *models.TrainingPlan) error
+	AddMetrics(metric *models.Metric) error
 }
 
 type UserService struct {
@@ -252,5 +254,48 @@ func (u *UserService) CreatePlan(trainerEmail string, clientID uint, description
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (u *UserService) AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error {
+	const op = "services.user.user.AddMetrics"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(clientEmail)
+
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", trainerEmail))
+		return service.ErrUserNotFound
+	}
+
+	if user.Role != models.RoleClient {
+		log.Error(fmt.Sprintf("trainers cant add metrics"))
+		return service.ErrInvalidRoleRequest
+	}
+
+	client, err := u.storage.GetClientByUserID(user.ID)
+
+	if err != nil {
+		log.Error(fmt.Sprintf("client profile not found"))
+		return service.ErrUserNotFound
+	}
+
+	metrics := &models.Metric{
+		ClientID:   client.ID,
+		Weight:     weight,
+		BodyFat:    bodyFat,
+		BMI:        bmi,
+		MeasuredAt: measuredAt,
+	}
+
+	err = u.storage.AddMetrics(metrics)
+
+	if err != nil {
+		// TODO: return more detailed error
+		return err
+	}
+
 	return nil
 }

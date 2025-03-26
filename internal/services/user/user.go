@@ -266,7 +266,7 @@ func (u *UserService) AddMetrics(clientEmail string, weight, bodyFat, bmi float6
 	user, _ := u.storage.GetUserByEmail(clientEmail)
 
 	if user == nil {
-		log.Error(fmt.Sprintf("user with email <%s> not found", trainerEmail))
+		log.Error(fmt.Sprintf("user with email <%s> not found", clientEmail))
 		return service.ErrUserNotFound
 	}
 

@@ -88,6 +88,7 @@ func main() {
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)
 		r.Get("/clients/profile", userHandler.GetClientProfile)
 		r.Post("/clients/metrics", userHandler.AddMetrics)
+		r.Get("/clients/metrics", userHandler.GetMetrics)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))

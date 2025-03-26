@@ -270,6 +270,15 @@ func (s *Storage) AddMetrics(metric *models.Metric) error {
 	return nil
 }
 
+func (s *Storage) GetMetrics(clientID uint) ([]models.Metric, error) {
+	var metrics []models.Metric
+	res := s.DB.Where("client_id = ?", clientID).Find(&metrics)
+	if res.Error != nil {
+		return []models.Metric{}, res.Error
+	}
+	return metrics, nil
+}
+
 func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }

@@ -261,6 +261,15 @@ func (s *Storage) CreatePlan(plan *models.TrainingPlan) error {
 	return nil
 }
 
+func (s *Storage) AddMetrics(metric *models.Metric) error {
+	const op = "postgres.AddMetrics"
+	result := s.DB.Create(metric)
+	if err := result.Error; err != nil {
+		return fmt.Errorf("%s: %w", op, result.Error)
+	}
+	return nil
+}
+
 func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }

@@ -83,6 +83,7 @@ func main() {
 		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
 		r.Get("/trainers/clients", userHandler.GetTrainersClients)
 		r.Post("/training-plan", userHandler.CreatePlan)
+		r.Post("/progress-reports", userHandler.AddProgressReport)
 
 		r.Post("/clients/profile", userHandler.CreateClient)
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)

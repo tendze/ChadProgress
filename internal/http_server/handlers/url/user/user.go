@@ -60,6 +60,11 @@ type AddProgressReportRequest struct {
 	ClientID uint   `json:"client-id" validate:"required"`
 }
 
+type GetProgressReportRequest struct {
+	TrainerID uint `json:"trainer-id" validate:"required"`
+	ClientID  uint `json:"client-id" validate:"required"`
+}
+
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
 	CreateClient(userEmail string, height, weight, bodyFat float64) error
@@ -71,6 +76,7 @@ type UserService interface {
 	AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error
 	GetMetrics(clientEmail string) ([]models.Metric, error)
 	AddProgressReport(trainerEmail, comments string, clientID uint) error
+	GetProgressReport(trainerID, clientID uint) ([]models.ProgressReport, error)
 }
 
 type UserHandler struct {
@@ -519,6 +525,46 @@ func (u *UserHandler) AddProgressReport(w http.ResponseWriter, r *http.Request) 
 	}
 
 	setHeaderRenderJSON(w, r, http.StatusOK, response.OK())
+}
+
+func (u *UserHandler) GetProgressReports(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.AddProgressReport"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	var req GetProgressReportRequest
+
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Error("failed to decode request body", err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
+		return
+	}
+
+	log.Info("request body decoded", slog.Any("request", req))
+	if err = validator.New().Struct(req); err != nil {
+		validationErr := err.(validator.ValidationErrors)
+		log.Error("invalid request", slog.String("errormsg", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+		return
+	}
+
+	reports, err := u.userService.GetProgressReport(req.TrainerID, req.ClientID)
+	if err != nil {
+		log.Error("failed to get client profile")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, reports)
 }
 
 func setHeaderRenderJSON(w http.ResponseWriter, r *http.Request, status int, v any) {

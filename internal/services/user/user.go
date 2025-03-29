@@ -23,6 +23,7 @@ type Storage interface {
 	AddMetrics(metric *models.Metric) error
 	GetMetrics(clientID uint) ([]models.Metric, error)
 	AddProgressReport(report *models.ProgressReport) error
+	GetProgressReport(trainerID, clientID uint) ([]models.ProgressReport, error)
 }
 
 type UserService struct {
@@ -373,4 +374,25 @@ func (u *UserService) AddProgressReport(trainerEmail, comments string, clientID 
 	}
 
 	return nil
+}
+
+func (u *UserService) GetProgressReport(userEmail string, trainerID, clientID uint) ([]models.ProgressReport, error) {
+	const op = "services.user.user.AddProgressReport"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(userEmail)
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", user))
+		return []models.ProgressReport{}, service.ErrUserNotFound
+	}
+
+	reports, err := u.storage.GetProgressReport(trainerID, clientID)
+	if err != nil {
+		log.Error("error occurred while adding progress report", err.Error())
+		return []models.ProgressReport{}, err
+	}
+
+	return reports, nil
 }

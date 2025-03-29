@@ -76,7 +76,7 @@ type UserService interface {
 	AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error
 	GetMetrics(clientEmail string) ([]models.Metric, error)
 	AddProgressReport(trainerEmail, comments string, clientID uint) error
-	GetProgressReport(trainerID, clientID uint) ([]models.ProgressReport, error)
+	GetProgressReport(userEmail string, trainerID, clientID uint) ([]models.ProgressReport, error)
 }
 
 type UserHandler struct {
@@ -557,7 +557,7 @@ func (u *UserHandler) GetProgressReports(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	reports, err := u.userService.GetProgressReport(req.TrainerID, req.ClientID)
+	reports, err := u.userService.GetProgressReport(userEmail, req.TrainerID, req.ClientID)
 	if err != nil {
 		log.Error("failed to get client profile")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))

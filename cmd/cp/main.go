@@ -83,13 +83,15 @@ func main() {
 		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
 		r.Get("/trainers/clients", userHandler.GetTrainersClients)
 		r.Post("/training-plan", userHandler.CreatePlan)
-		r.Post("/progress-reports", userHandler.AddProgressReport)
 
 		r.Post("/clients/profile", userHandler.CreateClient)
 		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)
 		r.Get("/clients/profile", userHandler.GetClientProfile)
 		r.Post("/clients/metrics", userHandler.AddMetrics)
 		r.Get("/clients/metrics", userHandler.GetMetrics)
+
+		r.Post("/progress-reports", userHandler.AddProgressReport)
+		r.Get("/progress-reports", userHandler.GetProgressReports)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))

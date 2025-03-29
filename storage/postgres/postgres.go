@@ -271,21 +271,33 @@ func (s *Storage) AddMetrics(metric *models.Metric) error {
 }
 
 func (s *Storage) GetMetrics(clientID uint) ([]models.Metric, error) {
+	const op = "postgres.GetMetrics"
 	var metrics []models.Metric
 	res := s.DB.Where("client_id = ?", clientID).Find(&metrics)
 	if res.Error != nil {
-		return []models.Metric{}, res.Error
+		return []models.Metric{}, fmt.Errorf("%s: %w", op, res.Error)
 	}
 	return metrics, nil
 }
 
 func (s *Storage) AddProgressReport(report *models.ProgressReport) error {
-	const op = "postgres.AddMetrics"
-	result := s.DB.Create(report)
-	if err := result.Error; err != nil {
-		return fmt.Errorf("%s: %w", op, result.Error)
+	const op = "postgres.AddProgressReport"
+	res := s.DB.Create(report)
+	if err := res.Error; err != nil {
+		return fmt.Errorf("%s: %w", op, res.Error)
 	}
 	return nil
+}
+
+func (s *Storage) GetProgressReport(trainerID, clientID uint) ([]models.ProgressReport, error) {
+	const op = "postgres.GetProgressreport"
+	var reports []models.ProgressReport
+	res := s.DB.Where("trainer_id = ? AND client_id = ?", trainerID, clientID).Find(&reports)
+	if err := res.Error; err != nil {
+		return []models.ProgressReport{}, fmt.Errorf("%s: %w", op, res.Error)
+	}
+
+	return reports, nil
 }
 
 func isInvalidEnumError(err error) bool {

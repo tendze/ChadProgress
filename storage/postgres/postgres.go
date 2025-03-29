@@ -279,6 +279,15 @@ func (s *Storage) GetMetrics(clientID uint) ([]models.Metric, error) {
 	return metrics, nil
 }
 
+func (s *Storage) AddProgressReport(report *models.ProgressReport) error {
+	const op = "postgres.AddMetrics"
+	result := s.DB.Create(report)
+	if err := result.Error; err != nil {
+		return fmt.Errorf("%s: %w", op, result.Error)
+	}
+	return nil
+}
+
 func isInvalidEnumError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 22P02")
 }

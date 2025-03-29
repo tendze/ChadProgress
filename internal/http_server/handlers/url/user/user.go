@@ -57,6 +57,7 @@ type AddMetricsRequest struct {
 
 type AddProgressReportRequest struct {
 	Comments string `json:"comments" validate:"required"`
+	ClientID uint   `json:"client-id" validate:"required"`
 }
 
 type UserService interface {
@@ -69,7 +70,7 @@ type UserService interface {
 	CreatePlan(trainerEmail string, clientID uint, description, schedule string) error
 	AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error
 	GetMetrics(clientEmail string) ([]models.Metric, error)
-	AddProgressReport(trainerEmail, comments string) error
+	AddProgressReport(trainerEmail, comments string, clientID uint) error
 }
 
 type UserHandler struct {
@@ -494,7 +495,7 @@ func (u *UserHandler) AddProgressReport(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = u.userService.AddProgressReport(userEmail, req.Comments)
+	err = u.userService.AddProgressReport(userEmail, req.Comments, req.ClientID)
 
 	if err != nil {
 		if errors.Is(err, service.ErrClientNotFound) {

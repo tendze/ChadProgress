@@ -22,6 +22,7 @@ type Storage interface {
 	CreatePlan(plan *models.TrainingPlan) error
 	AddMetrics(metric *models.Metric) error
 	GetMetrics(clientID uint) ([]models.Metric, error)
+	AddProgressReport(report *models.ProgressReport) error
 }
 
 type UserService struct {
@@ -292,7 +293,6 @@ func (u *UserService) AddMetrics(clientEmail string, weight, bodyFat, bmi float6
 	}
 
 	err = u.storage.AddMetrics(metric)
-
 	if err != nil {
 		// TODO: return more detailed error
 		return err
@@ -334,4 +334,43 @@ func (u *UserService) GetMetrics(clientEmail string) ([]models.Metric, error) {
 	}
 
 	return metrics, nil
+}
+
+func (u *UserService) AddProgressReport(trainerEmail, comments string, clientID uint) error {
+	const op = "services.user.user.AddProgressReport"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	user, _ := u.storage.GetUserByEmail(trainerEmail)
+
+	if user == nil {
+		log.Error(fmt.Sprintf("user with email <%s> not found", user))
+		return service.ErrUserNotFound
+	}
+
+	if user.Role != models.RoleTrainer {
+		log.Error(fmt.Sprintf("client cant add progress report"))
+		return service.ErrInvalidRoleRequest
+	}
+
+	trainer, err := u.storage.GetTrainerByUserID(user.ID)
+	if err != nil {
+		log.Error("trainer profile not found")
+		return service.ErrInvalidRoleRequest
+	}
+
+	report := &models.ProgressReport{
+		TrainerID: trainer.ID,
+		ClientID:  clientID,
+		Comments:  comments,
+	}
+
+	err = u.storage.AddProgressReport(report)
+	if err != nil {
+		log.Error("error occurred while adding progress report", err.Error())
+		return err
+	}
+
+	return nil
 }

@@ -55,6 +55,10 @@ type AddMetricsRequest struct {
 	MeasuredAt time.Time `json:"measured-at"`
 }
 
+type AddProgressReportRequest struct {
+	Comments string `json:"comments" validate:"required"`
+}
+
 type UserService interface {
 	CreateTrainer(userEmail, qualification, experience, achievement string) error
 	CreateClient(userEmail string, height, weight, bodyFat float64) error
@@ -65,6 +69,7 @@ type UserService interface {
 	CreatePlan(trainerEmail string, clientID uint, description, schedule string) error
 	AddMetrics(clientEmail string, weight, bodyFat, bmi float64, measuredAt time.Time) error
 	GetMetrics(clientEmail string) ([]models.Metric, error)
+	AddProgressReport(trainerEmail, comments string) error
 }
 
 type UserHandler struct {
@@ -457,6 +462,62 @@ func (u *UserHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setHeaderRenderJSON(w, r, http.StatusOK, metrics)
+}
+
+func (u *UserHandler) AddProgressReport(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.user.user.AddProgressReport"
+	log := u.log.With(
+		slog.String("op", op),
+	)
+
+	userEmail := r.Context().Value(models.ContextUserKey).(string)
+	if userEmail == "" {
+		log.Error("empty email from context")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	var req AddProgressReportRequest
+
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Error("failed to decode request body", err.Error())
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("could not decode request body"))
+		return
+	}
+
+	log.Info("request body decoded", slog.Any("request", req))
+	if err = validator.New().Struct(req); err != nil {
+		validationErr := err.(validator.ValidationErrors)
+		log.Error("invalid request", slog.String("errormsg", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+		return
+	}
+
+	err = u.userService.AddProgressReport(userEmail, req.Comments)
+
+	if err != nil {
+		if errors.Is(err, service.ErrClientNotFound) {
+			log.Info("client profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client profile not found"))
+			return
+		}
+		if errors.Is(err, service.ErrTrainerNotFound) {
+			log.Info("trainer profile not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client profile not found"))
+			return
+		}
+		if errors.Is(err, service.ErrUserNotFound) {
+			log.Info("user not found")
+			setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("client profile not found"))
+			return
+		}
+		log.Error("failed to get client profile")
+		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("bad gateway"))
+		return
+	}
+
+	setHeaderRenderJSON(w, r, http.StatusOK, response.OK())
 }
 
 func setHeaderRenderJSON(w http.ResponseWriter, r *http.Request, status int, v any) {

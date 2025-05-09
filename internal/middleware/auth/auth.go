@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"ChadProgress/internal/models"
 	"context"
 	"net/http"
 	"strings"
+
+	"ChadProgress/internal/models"
 )
 
 // TokenValidator interface for auth service structures

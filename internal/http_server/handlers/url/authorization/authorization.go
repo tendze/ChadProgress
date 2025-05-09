@@ -1,13 +1,15 @@
 package authorization
 
 import (
-	"ChadProgress/internal/lib/api/response"
-	service "ChadProgress/internal/services"
 	"errors"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
+
+	"ChadProgress/internal/lib/api/response"
+	service "ChadProgress/internal/services"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 )
 
 type RegisterRequest struct {
@@ -78,7 +80,6 @@ func (u *UserAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jwtToken, err := u.userService.RegisterUser(req.Email, req.Password, req.Name, req.Role)
-
 	if err != nil {
 		if errors.Is(err, service.ErrUserAlreadyExists) {
 			log.Info("user already exists")
@@ -133,7 +134,6 @@ func (u *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log.Info("login request body decoded", slog.Any("request", req))
 
 	jwtToken, err := u.userService.Login(req.Email, req.Password)
-
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			log.Info("invalid credentials")

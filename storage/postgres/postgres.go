@@ -1,14 +1,16 @@
 package postgres
 
 import (
-	"ChadProgress/internal/models"
-	"ChadProgress/storage"
 	"errors"
 	"fmt"
+	"strings"
+
+	"ChadProgress/internal/models"
+	"ChadProgress/storage"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"strings"
 )
 
 type Storage struct {
@@ -43,6 +45,7 @@ func New(dsn string) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &Storage{DB: db}, nil
 }
 
@@ -114,6 +117,7 @@ func createDummyTrainer(db *gorm.DB) error {
 			return err
 		}
 	}
+	
 	return nil
 }
 
@@ -137,8 +141,10 @@ func (s *Storage) SaveUser(user *models.User) (int64, error) {
 		} else if isTooLongFieldError(err) {
 			return -1, fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
+
 		return -1, fmt.Errorf("%s: %w", op, result.Error)
 	}
+
 	return int64(user.ID), nil
 }
 
@@ -151,8 +157,10 @@ func (s *Storage) SaveClient(client *models.Client) error {
 		} else if isTooLongFieldError(result.Error) {
 			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
+
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
+
 	return nil
 }
 
@@ -165,8 +173,10 @@ func (s *Storage) SaveTrainer(trainer *models.Trainer) error {
 		} else if isTooLongFieldError(result.Error) {
 			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
+
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
+
 	return nil
 }
 
@@ -178,8 +188,10 @@ func (s *Storage) GetUserByEmail(email string) (*models.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &user, nil
 }
 
@@ -191,8 +203,10 @@ func (s *Storage) GetTrainerByID(id uint) (*models.Trainer, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &trainer, nil
 }
 
@@ -204,8 +218,10 @@ func (s *Storage) GetTrainerByUserID(userID uint) (*models.Trainer, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &trainer, nil
 }
 
@@ -217,8 +233,10 @@ func (s *Storage) GetClientByID(id uint) (*models.Client, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &client, nil
 }
 
@@ -230,8 +248,10 @@ func (s *Storage) GetClientByUserID(userID uint) (*models.Client, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrRecordNotFound)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return &client, nil
 }
 
@@ -246,6 +266,7 @@ func (s *Storage) GetTrainersClients(trainerID uint) ([]models.Client, error) {
 	if res.Error != nil {
 		return []models.Client{}, res.Error
 	}
+
 	return clients, nil
 }
 
@@ -256,8 +277,10 @@ func (s *Storage) CreatePlan(plan *models.TrainingPlan) error {
 		if isTooLongFieldError(result.Error) {
 			return fmt.Errorf("%s: %w", op, storage.ErrFieldIsTooLong)
 		}
+
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
+
 	return nil
 }
 
@@ -267,6 +290,7 @@ func (s *Storage) AddMetrics(metric *models.Metric) error {
 	if err := result.Error; err != nil {
 		return fmt.Errorf("%s: %w", op, result.Error)
 	}
+
 	return nil
 }
 
@@ -277,6 +301,7 @@ func (s *Storage) GetMetrics(clientID uint) ([]models.Metric, error) {
 	if res.Error != nil {
 		return []models.Metric{}, fmt.Errorf("%s: %w", op, res.Error)
 	}
+
 	return metrics, nil
 }
 
@@ -286,6 +311,7 @@ func (s *Storage) AddProgressReport(report *models.ProgressReport) error {
 	if err := res.Error; err != nil {
 		return fmt.Errorf("%s: %w", op, res.Error)
 	}
+	
 	return nil
 }
 

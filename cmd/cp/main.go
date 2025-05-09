@@ -1,6 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
+
 	authclient "ChadProgress/internal/auth_client/http"
 	"ChadProgress/internal/config"
 	"ChadProgress/internal/http_server/handlers/url/authorization"
@@ -10,13 +16,9 @@ import (
 	userauthservice "ChadProgress/internal/services/authorization"
 	userservice "ChadProgress/internal/services/user"
 	"ChadProgress/storage/postgres"
-	"fmt"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"log/slog"
-	"net/http"
-	"os"
-	"time"
 )
 
 const (
@@ -95,14 +97,17 @@ func main() {
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))
+
 	if err = server.ListenAndServe(); err != nil {
 		log.Error("failed to start server")
 	}
+
 	log.Error("server stopped")
 }
 
 func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
+
 	switch env {
 	case envLocal:
 		log = setupPrettySlog()
@@ -115,6 +120,7 @@ func setupLogger(env string) *slog.Logger {
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 	}
+
 	return log
 }
 
@@ -125,5 +131,6 @@ func setupPrettySlog() *slog.Logger {
 		},
 	}
 	handler := opts.NewPrettyHandler(os.Stdout)
+
 	return slog.New(handler)
 }

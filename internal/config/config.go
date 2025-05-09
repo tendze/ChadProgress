@@ -3,10 +3,11 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -55,6 +56,7 @@ func MustLoad() *Config {
 		panic("could not read env files: " + err.Error())
 	}
 	cfg.DB.DBPassword = os.Getenv("DB_PASSWORD")
+
 	return &cfg
 }
 
@@ -69,5 +71,6 @@ func fetchConfigPath() (string, error) {
 	if configPath == "" {
 		return "", fmt.Errorf("config path is empty")
 	}
+
 	return configPath, nil
 }

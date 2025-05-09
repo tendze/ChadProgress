@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"ChadProgress/internal/models"
 	"errors"
+
+	"ChadProgress/internal/models"
 )
 
 var (

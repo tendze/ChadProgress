@@ -1,13 +1,14 @@
 package userhandler
 
 import (
-	"ChadProgress/internal/lib/api/response"
-	"ChadProgress/internal/models"
-	service "ChadProgress/internal/services"
 	"errors"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"ChadProgress/internal/lib/api/response"
+	"ChadProgress/internal/models"
+	service "ChadProgress/internal/services"
 
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -121,7 +122,6 @@ func (u *UserHandler) CreateTrainer(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("user email extracted from context", slog.String("email", userEmail))
 	err = u.userService.CreateTrainer(userEmail, req.Qualification, req.Experience, req.Achievement)
-
 	if err != nil {
 		if errors.Is(err, service.ErrDuplicateKey) {
 			log.Error("trainer already exists")
@@ -171,7 +171,6 @@ func (u *UserHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("user email extracted from context", slog.String("email", userEmail))
 	err = u.userService.CreateClient(userEmail, req.Height, req.Weight, req.BodyFat)
-
 	if err != nil {
 		if errors.Is(err, service.ErrDuplicateKey) {
 			log.Error("client already exists")
@@ -382,7 +381,6 @@ func (u *UserHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = u.userService.CreatePlan(userEmail, req.ClientID, req.Description, req.Schedule)
-
 	if err != nil {
 		if errors.Is(err, service.ErrTrainerNotFound) {
 			log.Info("trainer profile not found")
@@ -427,7 +425,6 @@ func (u *UserHandler) AddMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = u.userService.AddMetrics(userEmail, req.Weight, req.BodyFat, req.BMI, req.MeasuredAt)
-
 	if err != nil {
 		if errors.Is(err, service.ErrClientNotFound) {
 			log.Info("client profile not found")
@@ -456,7 +453,6 @@ func (u *UserHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metrics, err := u.userService.GetMetrics(userEmail)
-
 	if err != nil {
 		if errors.Is(err, service.ErrClientNotFound) {
 			log.Info("client profile not found")
@@ -502,7 +498,6 @@ func (u *UserHandler) AddProgressReport(w http.ResponseWriter, r *http.Request) 
 	}
 
 	err = u.userService.AddProgressReport(userEmail, req.Comments, req.ClientID)
-
 	if err != nil {
 		if errors.Is(err, service.ErrClientNotFound) {
 			log.Info("client profile not found")

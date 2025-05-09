@@ -1,7 +1,6 @@
 package authclient
 
 import (
-	"ChadProgress/internal/auth_client"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -11,6 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"ChadProgress/internal/auth_client"
 )
 
 type AuthServiceClient struct {
@@ -29,6 +30,7 @@ func NewAuthClient(baseUrl string, log *slog.Logger, timeOut time.Duration) *Aut
 
 func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_client.UserAuthRequestInterface) (*auth_client.UserRegistrationResponse, error) {
 	const op = "auth_client.http.auth_client.RegisterUser"
+
 	log := c.log.With(
 		slog.String("op", op),
 	)
@@ -55,12 +57,15 @@ func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_clien
 		log.Error("error occurred: " + err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		log.Error("error occurred: " + err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	defer resp.Body.Close()
 
 	contentLen := resp.Header.Get("Content-Length")
@@ -76,6 +81,7 @@ func (c *AuthServiceClient) RegisterUser(ctx context.Context, authReq auth_clien
 		log.Error("error occurred: " + err.Error())
 		return nil, errors.New("failed to parse response from auth service")
 	}
+
 	return &regResp, nil
 }
 
@@ -107,7 +113,9 @@ func (c *AuthServiceClient) LoginUser(ctx context.Context, authReq auth_client.U
 		log.Error("error occurred: " + err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		log.Error("error occurred: " + err.Error())
@@ -121,10 +129,12 @@ func (c *AuthServiceClient) LoginUser(ctx context.Context, authReq auth_client.U
 		log.Error("error occurred: " + err.Error())
 		return nil, fmt.Errorf("%s: %w", op, errors.New("failed to parse response from auth service"))
 	}
+
 	if loginResp.Error != "" {
 		log.Error("auth client did not find user")
 		return nil, fmt.Errorf("%s: %w", op, errors.New(loginResp.Error))
 	}
+
 	return &loginResp, nil
 }
 
@@ -161,5 +171,6 @@ func (c *AuthServiceClient) ValidateToken(ctx context.Context, token string) (st
 		return "", errors.New(validateResp.Error)
 	}
 	log.Info("token successfully validated")
+
 	return validateResp.UserLogin, nil
 }

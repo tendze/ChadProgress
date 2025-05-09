@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: chadprogress-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ChadDB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - chadprogress-network
+  
+  chadprogress:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - chadprogress-network
+
+networks:
+  chadprogress-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

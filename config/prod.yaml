@@ -1,7 +1,7 @@
-env: "dev"
+env: "prod"
 http_server:
-  host: "chadprogress-dev"
-  port: "8080"
+  host: "chadprogress-prod"
+  port: "8081"
   timeout: 4s
   idle_timeout: 60s
 db:

@@ -1,12 +1,12 @@
 env: "local"
 http_server:
-  host: "127.0.0.1"
-  port: "8000"
+  host: "chadprogress-local"
+  port: "8082"
   timeout: 4s
   idle_timeout: 60s
 db:
   username: "postgres"
-  host: "127.0.0.1"
+  host: "postgres"
   port: "5432"
   dbname: "ChadDB"
   sslmode: "disable"

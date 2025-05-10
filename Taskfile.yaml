@@ -6,13 +6,27 @@ tasks:
     aliases:
       - cp
     cmd: go run cmd/cp/main.go --config_path=./config/local.yaml
-  ChadProgressDocker:
-    desc: "starts ChadProgress server in docker container"
+  ChadProgressDev:
+    desc: "starts ChadProgress server in docker container in dev env"
     aliases:
       - cpdev
     cmds:
       - "docker-compose up --build -d postgres"
-      - "docker-compose up --build -d chadprogress"
+      - "docker-compose up --build -d chadprogress-dev"
+  ChadProgressLocal:
+    desc: "starts ChadProgress server in docker container in local env"
+    aliases:
+      - cplocal
+    cmds:
+      - "docker-compose up --build -d postgres"
+      - "docker-compose up --build -d chadprogress-local"
+  ChadProgressProd:
+    desc: "starts ChadProgress server in docker container in prod env"
+    aliases:
+      - cpprod
+    cmds:
+      - "docker-compose up --build -d postgres"
+      - "docker-compose up --build -d chadprogress-prod"
   ChadProgressDB:
     desc: "starts ChadProgress DataBase in docker container"
     aliases:

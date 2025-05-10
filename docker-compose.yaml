@@ -14,12 +14,35 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - chadprogress-network
-  
-  chadprogress:
-    build:
-      dockerfile: Dockerfile
+  chadprogress-dev:
+    build: .
     ports:
       - "8080:8080"
+    environment:
+      CONFIG_PATH: "/config/dev.yaml"
+    command: ["--config_path=${CONFIG_PATH}"]
+    depends_on:
+      - postgres
+    networks:
+      - chadprogress-network
+  chadprogress-prod:
+    build: .
+    ports:
+      - "8081:8080"  # Другой порт, чтобы не конфликтовало
+    environment:
+      CONFIG_PATH: "/config/prod.yaml"
+    command: ["--config_path=${CONFIG_PATH}"]
+    depends_on:
+      - postgres
+    networks:
+      - chadprogress-network
+  chadprogress-local:
+    build: .
+    ports:
+      - "8082:8080"  # Уникальный порт
+    environment:
+      CONFIG_PATH: "/config/local.yaml"
+    command: ["--config_path=${CONFIG_PATH}"]
     depends_on:
       - postgres
     networks:

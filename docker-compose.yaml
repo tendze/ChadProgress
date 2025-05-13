@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  postgres:
+  cp-db:
     image: postgres:latest
     container_name: chadprogress-db
     environment:
@@ -9,11 +9,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ChadDB
     ports:
-      - "5432:5432"
+      - "5437:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - chadprogress-network
+      - shared-network
   chadprogress-dev:
     build: .
     ports:
@@ -22,35 +22,35 @@ services:
       CONFIG_PATH: "/config/dev.yaml"
     command: ["--config_path=${CONFIG_PATH}"]
     depends_on:
-      - postgres
+      - cp-db
     networks:
-      - chadprogress-network
+      - shared-network
   chadprogress-prod:
     build: .
     ports:
-      - "8081:8080"  # Другой порт, чтобы не конфликтовало
+      - "8081:8080"
     environment:
       CONFIG_PATH: "/config/prod.yaml"
     command: ["--config_path=${CONFIG_PATH}"]
     depends_on:
-      - postgres
+      - cp-db
     networks:
-      - chadprogress-network
+      - shared-network
   chadprogress-local:
     build: .
     ports:
-      - "8082:8080"  # Уникальный порт
+      - "8082:8080"
     environment:
       CONFIG_PATH: "/config/local.yaml"
     command: ["--config_path=${CONFIG_PATH}"]
     depends_on:
-      - postgres
+      - cp-db
     networks:
-      - chadprogress-network
+      - shared-network
 
 networks:
-  chadprogress-network:
-    driver: bridge
+  shared-network:
+    external: true
 
 volumes:
   postgres_data:

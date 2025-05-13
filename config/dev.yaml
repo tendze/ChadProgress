@@ -6,9 +6,9 @@ http_server:
   idle_timeout: 60s
 db:
   username: "postgres"
-  host: "postgres"
+  host: "cp-db"
   port: "5432"
   dbname: "ChadDB"
   sslmode: "disable"
 auth_client:
-  baseurl: "http://127.0.0.1:8001"
+  baseurl: "http://jwt-auth-service-local:8000"

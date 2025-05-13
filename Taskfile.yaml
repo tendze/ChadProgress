@@ -1,34 +1,38 @@
 version: "3"
 
 tasks:
-  ChadProgress:
-    desc: "starts ChadProgress server locally"
-    aliases:
-      - cp
-    cmd: go run cmd/cp/main.go --config_path=./config/local.yaml
   ChadProgressDev:
     desc: "starts ChadProgress server in docker container in dev env"
     aliases:
       - cpdev
     cmds:
-      - "docker-compose up --build -d postgres"
+      - "docker network inspect shared-network >/dev/null 2>&1 || docker network create shared-network"
+      - "docker-compose up --build -d cp-db"
       - "docker-compose up --build -d chadprogress-dev"
   ChadProgressLocal:
     desc: "starts ChadProgress server in docker container in local env"
     aliases:
       - cplocal
     cmds:
-      - "docker-compose up --build -d postgres"
+      - "docker network inspect shared-network >/dev/null 2>&1 || docker network create shared-network"
+      - "docker-compose up --build -d cp-db"
       - "docker-compose up --build -d chadprogress-local"
   ChadProgressProd:
     desc: "starts ChadProgress server in docker container in prod env"
     aliases:
       - cpprod
     cmds:
-      - "docker-compose up --build -d postgres"
+      - "docker network inspect shared-network >/dev/null 2>&1 || docker network create shared-network"
+      - "docker-compose up --build -d cp-db"
       - "docker-compose up --build -d chadprogress-prod"
   ChadProgressDB:
     desc: "starts ChadProgress DataBase in docker container"
     aliases:
       - cpdb-up
-    cmd: "docker-compose up -d postgres"
+    cmd: "docker-compose up -d cp-db"
+  generate:
+    desc: "generate mocks for all interfaces"
+    cmd: "go generate ./..."
+  unit-tests:
+    desc: "starts all unit-tests in project"
+    cmd: "go test ./... -v -cover"

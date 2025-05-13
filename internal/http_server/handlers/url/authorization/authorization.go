@@ -12,6 +12,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+//go:generate mockgen -source=authorization.go -destination=./authorization_mock.go -package=authorization
+type UserAuthService interface {
+	RegisterUser(email, password, name, role string) (string, error)
+	Login(email, password string) (string, error)
+}
+
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
@@ -32,11 +38,6 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Status   string `json:"status"`
 	JWTToken string `json:"token,omitempty"`
-}
-
-type UserAuthService interface {
-	RegisterUser(email, password, name, role string) (string, error)
-	Login(email, password string) (string, error)
 }
 
 type UserAuthHandler struct {
@@ -65,8 +66,9 @@ func (u *UserAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	err := render.DecodeJSON(r.Body, &req)
 	if err != nil {
-		log.Error("failed to decode request body", err.Error())
-		render.JSON(w, r, response.Error("failed to decode request body"))
+		log.Error("failed to decode request body", slog.String("error", err.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("failed to decode request body"))
+
 		return
 	}
 
@@ -74,8 +76,10 @@ func (u *UserAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err = validator.New().Struct(req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		validationErr := err.(validator.ValidationErrors)
-		log.Error("invalid request", validationErr.Error())
-		render.JSON(w, r, response.ValidationError(validationErr))
+
+		log.Error("invalid request", slog.String("error", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+
 		return
 	}
 
@@ -83,13 +87,15 @@ func (u *UserAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrUserAlreadyExists) {
 			log.Info("user already exists")
-			w.WriteHeader(http.StatusBadGateway)
+			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, response.Error("user already with such email"))
+
 			return
 		} else if errors.Is(err, service.ErrFieldIsTooLong) {
 			log.Info("field login or password is too long")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, response.Error("login and password must be no more than 100 symbols"))
+
 			return
 		}
 
@@ -116,19 +122,20 @@ func (u *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req LoginRequest
+
 	err := render.DecodeJSON(r.Body, &req)
-	log.Info("req", req)
 	if err != nil {
-		log.Error("failed to decode request body", err.Error())
-		render.JSON(w, r, response.Error("failed to decode request body"))
+		log.Error("failed to decode request body", slog.String("error", err.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.Error("failed to decode request body"))
+
 		return
 	}
 
 	if err = validator.New().Struct(req); err != nil {
 		validationErr := err.(validator.ValidationErrors)
-		log.Error("invalid request", validationErr.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		render.JSON(w, r, response.ValidationError(validationErr))
+		log.Error("invalid request", slog.String("error", validationErr.Error()))
+		setHeaderRenderJSON(w, r, http.StatusBadRequest, response.ValidationError(validationErr))
+
 		return
 	}
 	log.Info("login request body decoded", slog.Any("request", req))
@@ -142,6 +149,7 @@ func (u *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Error("failed to sign in")
 		setHeaderRenderJSON(w, r, http.StatusBadGateway, response.Error("failed to sign in"))
+
 		return
 	}
 

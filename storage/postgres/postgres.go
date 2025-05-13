@@ -117,7 +117,7 @@ func createDummyTrainer(db *gorm.DB) error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -311,12 +311,12 @@ func (s *Storage) AddProgressReport(report *models.ProgressReport) error {
 	if err := res.Error; err != nil {
 		return fmt.Errorf("%s: %w", op, res.Error)
 	}
-	
+
 	return nil
 }
 
 func (s *Storage) GetProgressReport(trainerID, clientID uint) ([]models.ProgressReport, error) {
-	const op = "postgres.GetProgressreport"
+	const op = "postgres.GetProgressReport"
 	var reports []models.ProgressReport
 	res := s.DB.Where("trainer_id = ? AND client_id = ?", trainerID, clientID).Find(&reports)
 	if err := res.Error; err != nil {
@@ -324,6 +324,17 @@ func (s *Storage) GetProgressReport(trainerID, clientID uint) ([]models.Progress
 	}
 
 	return reports, nil
+}
+
+func (s *Storage) GetPlan(trainerID, clientID uint) ([]models.TrainingPlan, error) {
+	const op = "postgres.GetTrainingPlan"
+	var plans []models.TrainingPlan
+	res := s.DB.Where("trainer_id = ? AND client_id = ?", trainerID, clientID).Find(&plans)
+	if err := res.Error; err != nil {
+		return []models.TrainingPlan{}, fmt.Errorf("%s: %w", op, res.Error)
+	}
+
+	return plans, nil
 }
 
 func isInvalidEnumError(err error) bool {

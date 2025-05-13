@@ -66,7 +66,7 @@ func main() {
 	authMiddleware := http2.AuthMiddleware(authServiceClient)
 
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Разрешаем все источники
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
@@ -81,19 +81,24 @@ func main() {
 	// Protected endpoints
 	router.Route("/user", func(r chi.Router) {
 		r.Use(authMiddleware)
+
+		// Trainer endpoints
 		r.Post("/trainers/profile", userHandler.CreateTrainer)
 		r.Get("/trainers/profile", userHandler.GetTrainerProfile)
 		r.Get("/trainers/clients", userHandler.GetTrainersClients)
 		r.Post("/training-plan", userHandler.CreatePlan)
+		r.Post("/progress-reports", userHandler.AddProgressReport)
 
+		// Client endpoints
 		r.Post("/clients/profile", userHandler.CreateClient)
-		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)
 		r.Get("/clients/profile", userHandler.GetClientProfile)
+		r.Patch("/clients/select-trainers", userHandler.SelectTrainer)
 		r.Post("/clients/metrics", userHandler.AddMetrics)
 		r.Get("/clients/metrics", userHandler.GetMetrics)
 
-		r.Post("/progress-reports", userHandler.AddProgressReport)
+		// Common endpoints
 		r.Get("/progress-reports", userHandler.GetProgressReports)
+		r.Get("/training-plan", userHandler.GetPlan)
 	})
 
 	log.Info("server started", slog.String("servaddr", serverAddr))
